@@ -70,4 +70,11 @@ class Registration extends Model
             'completed_at' => 'datetime',
         ];
     }
+
+    public function progress()
+    {
+        return $this->hasOne(
+            RegistrationProgress::class
+        );
+    }
 }

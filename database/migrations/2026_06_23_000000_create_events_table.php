@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('title');
             $table->string('slug')->unique();
             $table->text('description');
-            $table->string('banner');
+            $table->string('banner')->nullable();
             $table->dateTime('start_date')->index();
             $table->dateTime('end_date')->index();
             $table->string('status')->index();

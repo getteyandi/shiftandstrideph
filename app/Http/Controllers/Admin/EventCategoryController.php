@@ -3,63 +3,73 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Event;
+use App\Models\EventCategory;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class EventCategoryController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        return Inertia::render('admin/event-categories/Index', [
+            'categories' => EventCategory::with('event')
+                ->latest()
+                ->paginate(10),
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        return Inertia::render('admin/event-categories/Create', [
+            'events' => Event::select('id', 'title')
+                ->orderBy('title')
+                ->get(),
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'event_id' => ['required', 'exists:events,id'],
+            'name' => ['required', 'max:255'],
+            'target_km' => ['required', 'numeric', 'min:1'],
+            'ranking_enabled' => ['required', 'boolean'],
+        ]);
+
+        EventCategory::create($validated);
+
+        return redirect()->route('event-categories.index');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function edit(EventCategory $eventCategory)
     {
-        //
+        return Inertia::render('admin/event-categories/Edit', [
+            'category' => $eventCategory,
+            'events' => Event::select('id', 'title')->get(),
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
+    public function update(
+        Request $request,
+        EventCategory $eventCategory
+    ) {
+        $validated = $request->validate([
+            'event_id' => ['required', 'exists:events,id'],
+            'name' => ['required', 'max:255'],
+            'target_km' => ['required', 'numeric', 'min:1'],
+            'ranking_enabled' => ['required', 'boolean'],
+        ]);
+
+        $eventCategory->update($validated);
+
+        return redirect()->route('event-categories.index');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function destroy(EventCategory $eventCategory)
     {
-        //
-    }
+        $eventCategory->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route('event-categories.index');
     }
 }

@@ -39,9 +39,9 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property-read Collection<int, RunSubmission> $runSubmissions
  */
 #[Fillable([
-    'name',
     'first_name',
     'last_name',
+    'status',
     'profile_photo',
     'runner_code',
     'birthday',
@@ -80,5 +80,12 @@ class User extends Authenticatable implements PasskeyUser
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    public function registrations()
+    {
+        return $this->hasMany(
+            Registration::class
+        );
     }
 }
