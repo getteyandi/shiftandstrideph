@@ -1,10 +1,16 @@
-import { router, useForm } from '@inertiajs/react';
+import EventCard from '@/components/EventCard';
+import AppLayout from '@/layouts/app-layout';
+import { Head, router, useForm } from '@inertiajs/react';
+import { useState } from 'react';
 
 export default function Index({
     events,
+    filters = ['All', 'Open', 'Marathon', 'Ultra'],
 }: any) {
+    const [active, setActive] = useState(filters[0]);
+
     const { post, setData, errors } = useForm({
-    event_category_id: '',
+        event_category_id: '',
     });
 
     const join = (categoryId: number) => {
@@ -14,45 +20,45 @@ export default function Index({
     };
 
     return (
-        <div className="p-6">
-            <h1 className="text-2xl font-bold mb-6">
-                Available Events
-            </h1>
-        {errors.registration && (
-            <div className="mb-4 rounded bg-red-500 px-4 py-2 text-white">
-                {errors.registration}
-            </div>
-        )}
-            {events.map((event: any) => (
-                <div
-                    key={event.id}
-                    className="border p-4 mb-4"
-                >
-                    <h2 className="font-bold">
-                        {event.title}
-                    </h2>
-
-                    {event.categories.map(
-                        (category: any) => (
-                            <div
-                                key={category.id}
-                                className="flex gap-4 mt-2"
-                            >
-                                <span>
-                                    {category.name}
-                                </span>
-
+        <>
+            <Head title="Events" />
+            <div className="animate-floatup">
+                <div className="mb-6 flex flex-wrap items-end justify-between gap-3.5">
+                    <div>
+                        <div className="mb-1.5 text-[11px] font-bold tracking-[.28em] text-lime-deep uppercase">
+                            Browse · Join
+                        </div>
+                        <h1 className="m-0 font-display text-[clamp(30px,4.4vw,44px)] leading-[.92] font-extrabold uppercase italic">
+                            Upcoming Events
+                        </h1>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {filters.map((f) => {
+                            const on = active === f;
+                            return (
                                 <button
-                                    onClick={() => join(category.id)}
-                                    className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                    key={f}
+                                    type="button"
+                                    onClick={() => setActive(f)}
+                                    className={`rounded-full border px-4 py-2 text-[13px] font-semibold transition-colors ${
+                                        on
+                                            ? 'border-ink-900 bg-ink-900 text-lime'
+                                            : 'border-[#DDE1D5] bg-white text-[#5A6152] hover:border-lime'
+                                    }`}
                                 >
-                                    Join
+                                    {f}
                                 </button>
-                            </div>
-                        )
-                    )}
+                            );
+                        })}
+                    </div>
                 </div>
-            ))}
-        </div>
+
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-[22px]">
+                    {events.map((event, i) => (
+                        <EventCard key={event.id} event={event} onJoin={join} />
+                    ))}
+                </div>
+            </div>
+        </>
     );
 }

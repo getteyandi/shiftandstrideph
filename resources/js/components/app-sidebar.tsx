@@ -1,5 +1,18 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid } from 'lucide-react';
+import {
+    BookOpen,
+    CalendarDays,
+    ClipboardCheck,
+    ClipboardList,
+    Flag,
+    FolderGit2,
+    Footprints,
+    History,
+    LayoutGrid,
+    ListTree,
+    Trophy,
+    Users,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -17,10 +30,58 @@ import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
+    // PARTICIPANT
     {
         title: 'Dashboard',
-        href: dashboard(),
+        href: '/dashboard',
         icon: LayoutGrid,
+    },
+    {
+        title: 'Events',
+        href: '/events',
+        icon: CalendarDays,
+    },
+    {
+        title: 'Submit Run',
+        href: '/run-submissions',
+        icon: Footprints,
+    },
+    {
+        title: 'My Runs',
+        href: '/my-runs',
+        icon: History,
+    },
+    {
+        title: 'Leaderboards',
+        href: '/leaderboards',
+        icon: Trophy,
+    },
+
+    // ADMIN
+    {
+        title: 'Manage Users',
+        href: '/admin/users',
+        icon: Users,
+    },
+    {
+        title: 'Manage Events',
+        href: '/admin/events',
+        icon: Flag,
+    },
+    {
+        title: 'Event Categories',
+        href: '/admin/event-categories',
+        icon: ListTree,
+    },
+    {
+        title: 'Registrations',
+        href: '/admin/registrations',
+        icon: ClipboardList,
+    },
+    {
+        title: 'Run Submissions',
+        href: '/admin/run-submissions',
+        icon: ClipboardCheck,
     },
 ];
 
