@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Notifications\UserApprovedNotification;
 use Inertia\Inertia;
 
 class AdminUserController extends Controller
@@ -23,6 +24,10 @@ class AdminUserController extends Controller
         $user->update([
             'status' => 'approved',
         ]);
+
+        $user->notify(
+            new UserApprovedNotification()
+        );
 
         return back();
     }

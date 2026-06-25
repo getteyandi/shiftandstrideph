@@ -47,4 +47,11 @@ class EventCategory extends Model
             'ranking_enabled' => 'boolean',
         ];
     }
+
+    public function registrations()
+    {
+        return $this->hasMany(
+            Registration::class
+        );
+    }
 }

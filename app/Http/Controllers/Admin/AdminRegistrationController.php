@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Registration;
+use App\Notifications\RegistrationApprovedNotification;
+use App\Notifications\UserApprovedNotification;
 use Inertia\Inertia;
 
 class AdminRegistrationController extends Controller
@@ -24,6 +26,7 @@ class AdminRegistrationController extends Controller
     public function approve(
         Registration $registration
     ) {
+        dd('approve method reached');
         $registration->update([
             'status' => 'approved',
             'approved_at' => now(),

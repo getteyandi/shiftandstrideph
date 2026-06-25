@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\RunSubmission;
+use App\Notifications\RunApprovedNotification;
+use App\Notifications\RunRejectedNotification;
 use Inertia\Inertia;
 
 class AdminRunSubmissionController extends Controller
@@ -65,6 +67,11 @@ class AdminRunSubmissionController extends Controller
                 'completed_at' => now(),
             ]);
         }
+
+        $runSubmission->user->notify(
+            new RunApprovedNotification()
+        );
+
         return back();
     }
 
@@ -76,6 +83,10 @@ class AdminRunSubmissionController extends Controller
             'reviewed_by' => auth()->id(),
             'reviewed_at' => now(),
         ]);
+
+        $runSubmission->user->notify(
+            new RunRejectedNotification()
+        );
 
         return back();
     }

@@ -7,7 +7,9 @@ use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\EventCategoryController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\EventController;
+use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\RegistrationController;
+use App\Http\Controllers\RunHistoryController;
 use App\Http\Controllers\RunSubmissionController;
 use Inertia\Inertia;
 
@@ -88,6 +90,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         '/admin/run-submissions/{runSubmission}/reject',
         [AdminRunSubmissionController::class, 'reject']
     )->name('admin.run-submissions.reject');
+
+    Route::get(
+        '/my-runs',
+        [RunHistoryController::class, 'index']
+    )->name('my-runs.index');
+
+    Route::get(
+        '/leaderboards',
+        [LeaderboardController::class, 'index']
+    )->name('leaderboards.index');
 });
 
 require __DIR__ . '/settings.php';
