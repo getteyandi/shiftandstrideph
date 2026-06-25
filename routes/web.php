@@ -25,10 +25,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'admin/event-categories',
         EventCategoryController::class
     );
+    // MAIN EVENTS
     Route::get(
         '/events',
         [RegistrationController::class, 'index']
     )->name('events.index');
+    Route::resource('events', RegistrationController::class)
+        ->only(['index', 'show']);
+    Route::post(
+        '/events/{event}/join',
+        [RegistrationController::class, 'store']
+    )->name('events.join');
+
+    // -----------------
 
     Route::post(
         '/registrations',
@@ -59,6 +68,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('auth/pending-approval');
     })->name('pending-approval');
 
+    // MAIN
     Route::get(
         '/dashboard',
         [DashboardController::class, 'index']
@@ -66,6 +76,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware(['auth', 'verified'])
         ->name('dashboard');
 
+    // MAIN
     Route::get(
         '/run-submissions',
         [RunSubmissionController::class, 'index']
@@ -76,6 +87,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         [RunSubmissionController::class, 'store']
     )->name('run-submissions.store');
 
+    // MAIN
     Route::get(
         '/admin/run-submissions',
         [AdminRunSubmissionController::class, 'index']

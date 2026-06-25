@@ -13,13 +13,43 @@ return new class extends Migration
     {
         Schema::create('events', function (Blueprint $table) {
             $table->id();
-            $table->string('title');
+
+            // Basic Information
+            $table->string('name');
             $table->string('slug')->unique();
             $table->text('description');
+
+            // Branding
             $table->string('banner')->nullable();
-            $table->dateTime('start_date')->index();
-            $table->dateTime('end_date')->index();
-            $table->string('status')->index();
+
+            // Event Information
+            $table->string('location');
+
+            // Registration Period
+            $table->dateTime('registration_start')
+                ->nullable()
+                ->index();
+
+            $table->dateTime('registration_end')
+                ->nullable()
+                ->index();
+
+            // Event Period
+            $table->dateTime('start_date')
+                ->index();
+
+            $table->dateTime('end_date')
+                ->index();
+
+            // Status
+            $table->enum('status', [
+                'draft',
+                'upcoming',
+                'open',
+                'closed',
+                'completed',
+            ])->default('draft')->index();
+
             $table->timestamps();
         });
     }

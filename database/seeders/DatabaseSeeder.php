@@ -17,16 +17,18 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'first_name' => 'Test',
-            'last_name' => 'User',
-            'email' => 'test@example.com',
-            'status' => 'approved',
-        ]);
+        // User::factory()->create([
+        //     'first_name' => 'Test',
+        //     'last_name' => 'User',
+        //     'email' => 'test@example.com',
+        //     'status' => 'active',
+        // ]);
 
         $this->call([
             EventSeeder::class,
-            EventCategorySeeder::class,
+            DemouserSeeder::class,
+            RegistrationSeeder::class,
+            // EventCategorySeeder::class,
         ]);
     }
 }

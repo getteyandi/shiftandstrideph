@@ -7,29 +7,57 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
+ *
+ * // Relationships
  * @property int $user_id
  * @property int $event_category_id
+ *
+ * // Registration
+ * @property string $bib_number
  * @property string $status
+ *
+ * // Progress
+ * @property float $completed_km
+ * @property int $activity_count
+ * @property Carbon|null $last_activity_at
+ *
+ * // Lifecycle
  * @property Carbon|null $approved_at
  * @property Carbon|null $completed_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ *
+ * // Relationships
  * @property-read User $user
  * @property-read EventCategory $eventCategory
  * @property-read Collection<int, RunSubmission> $runSubmissions
  *
  * @mixin Builder<Registration>
  */
-#[Fillable(['user_id', 'event_category_id', 'status', 'approved_at', 'completed_at'])]
+#[Fillable([
+    'user_id',
+    'event_category_id',
+
+    'bib_number',
+
+    'status',
+
+    'completed_km',
+    'activity_count',
+    'last_activity_at',
+
+    'approved_at',
+    'completed_at',
+])]
 class Registration extends Model
 {
     /**
-     * Get the user who owns the registration.
+     * Registration owner.
      *
      * @return BelongsTo<User, $this>
      */
@@ -39,7 +67,7 @@ class Registration extends Model
     }
 
     /**
-     * Get the event category selected for the registration.
+     * Selected event category.
      *
      * @return BelongsTo<EventCategory, $this>
      */
@@ -49,32 +77,34 @@ class Registration extends Model
     }
 
     /**
-     * Get the run submissions linked to the registration.
+     * Run submissions credited to this registration.
      *
-     * @return BelongsToMany<RunSubmission, $this>
+     * Assumes run_submissions.registration_id exists.
+     *
+     * @return HasMany<RunSubmission, $this>
      */
-    public function runSubmissions(): BelongsToMany
+    public function runSubmissions(): HasMany
     {
-        return $this->belongsToMany(RunSubmission::class, 'registration_submission');
+        return $this->hasMany(RunSubmission::class);
     }
 
     /**
-     * Get the attributes that should be cast.
+     * Attribute casting.
      *
      * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
+            'completed_km' => 'decimal:2',
+
+            'activity_count' => 'integer',
+
+            'last_activity_at' => 'datetime',
+
             'approved_at' => 'datetime',
+
             'completed_at' => 'datetime',
         ];
-    }
-
-    public function progress()
-    {
-        return $this->hasOne(
-            RegistrationProgress::class
-        );
     }
 }

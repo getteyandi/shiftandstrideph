@@ -13,16 +13,53 @@ return new class extends Migration
     {
         Schema::create('event_categories', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('event_id')->constrained()->cascadeOnDelete();
-            $table->string('name');
+
+            // Relationships
+            $table->foreignId('event_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
+            // Category Information
+            $table->string('name');               // e.g. 5 KM, 21 KM, 300 KM
             $table->decimal('target_km', 8, 2);
-            $table->boolean('ranking_enabled')->default(false);
-            $table->unsignedBigInteger('badge_id')->nullable()->index();
-            $table->string('certificate_template')->nullable();
+
+            // Display Order
+            $table->unsignedInteger('sort_order')
+                ->default(1);
+
+            // Registration
+            $table->unsignedInteger('registration_limit')
+                ->nullable();
+
+            // Leaderboard
+            $table->boolean('ranking_enabled')
+                ->default(false);
+
+            // Rewards
+            $table->unsignedBigInteger('badge_id')
+                ->nullable()
+                ->index();
+
+            $table->string('certificate_template')
+                ->nullable();
+
             $table->timestamps();
 
-            $table->unique(['event_id', 'name']);
-            $table->index(['event_id', 'ranking_enabled']);
+            // Constraints
+            $table->unique([
+                'event_id',
+                'name',
+            ]);
+
+            $table->index([
+                'event_id',
+                'ranking_enabled',
+            ]);
+
+            $table->index([
+                'event_id',
+                'sort_order',
+            ]);
         });
     }
 

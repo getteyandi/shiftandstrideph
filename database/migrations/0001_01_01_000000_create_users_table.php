@@ -14,26 +14,38 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
 
+            // Identity
             $table->string('first_name');
             $table->string('last_name');
-
             $table->string('email')->unique();
 
-            $table->string('status')
-                ->default('pending');
+            // Account
+            $table->enum('status', [
+                'pending',
+                'active',
+                'suspended',
+            ])->default('pending');
+
+            // Runner
+            $table->string('runner_code')
+                ->unique()
+                ->nullable();
+
+            $table->boolean('verified')
+                ->default(false);
 
             $table->string('profile_photo')
                 ->nullable();
 
-            $table->string('runner_code')
-                ->nullable()
-                ->unique();
-
+            // Personal Details
             $table->date('birthday')
                 ->nullable();
 
-            $table->string('gender')
-                ->nullable();
+            $table->enum('gender', [
+                'Male',
+                'Female',
+                'Prefer not to say',
+            ])->nullable();
 
             $table->string('province')
                 ->nullable();
@@ -41,6 +53,7 @@ return new class extends Migration
             $table->string('city')
                 ->nullable();
 
+            // Authentication
             $table->timestamp('email_verified_at')
                 ->nullable();
 

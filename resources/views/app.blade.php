@@ -35,6 +35,13 @@
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
         @fonts
+        {{-- Brand fonts: Saira Condensed (display), Saira (stats), Hanken Grotesk (UI) --}}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Saira:ital,wght@0,500;0,700;1,700&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap"
+            rel="stylesheet"
+        />
 
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])

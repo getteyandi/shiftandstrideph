@@ -13,19 +13,57 @@ return new class extends Migration
     {
         Schema::create('registrations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('event_category_id')->constrained()->cascadeOnDelete();
-            $table->enum('status', ['pending', 'approved', 'rejected', 'completed'])
-                ->default('pending')
-                ->index();
-            $table->timestamp('approved_at')->nullable();
-            $table->timestamp('completed_at')->nullable();
+
+            // Relationships
+            $table->foreignId('user_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
+            $table->foreignId('event_category_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
+            // Registration information
+            $table->string('bib_number');
+
+            $table->enum('status', [
+                'pending',
+                'approved',
+                'rejected',
+                'completed',
+            ])->default('pending')->index();
+
+            // Progress
+            $table->decimal('completed_km', 8, 2)
+                ->default(0);
+
+            $table->unsignedInteger('activity_count')
+                ->default(0);
+
+            $table->timestamp('last_activity_at')
+                ->nullable();
+
+            // Lifecycle
+            $table->timestamp('approved_at')
+                ->nullable();
+
+            $table->timestamp('completed_at')
+                ->nullable();
+
             $table->timestamps();
 
-            $table->unique(['user_id', 'event_category_id']);
-            $table->index(['event_category_id', 'status']);
+            $table->unique([
+                'user_id',
+                'event_category_id',
+            ]);
+
+            $table->index([
+                'event_category_id',
+                'status',
+            ]);
         });
     }
+
 
     /**
      * Reverse the migrations.

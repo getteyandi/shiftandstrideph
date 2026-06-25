@@ -48,7 +48,7 @@ class FortifyServiceProvider extends ServiceProvider
                 )
             ) {
 
-                if ($user->status !== 'approved') {
+                if ($user->status !== 'active') {
 
                     throw \Illuminate\Validation\ValidationException::withMessages([
                         'email' => [
