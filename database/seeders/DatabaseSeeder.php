@@ -25,10 +25,7 @@ class DatabaseSeeder extends Seeder
         // ]);
 
         $this->call([
-            EventSeeder::class,
-            DemouserSeeder::class,
-            RegistrationSeeder::class,
-            // EventCategorySeeder::class,
+            FullPipelineSeeder::class,
         ]);
     }
 }

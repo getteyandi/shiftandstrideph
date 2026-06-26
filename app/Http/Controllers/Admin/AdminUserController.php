@@ -9,25 +9,58 @@ use Inertia\Inertia;
 
 class AdminUserController extends Controller
 {
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
-        return Inertia::render(
-            'admin/users/Index',
-            [
-                'users' => User::latest()->get(),
-            ]
-        );
+        $filter = $request->query('status', 'all');
+
+        $counts = User::query()
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $users = User::query()
+            ->when(
+                in_array($filter, ['pending', 'active', 'suspended'], true),
+                fn ($query) => $query->where('status', $filter),
+            )
+            ->latest()
+            ->paginate(8)
+            ->withQueryString();
+
+        return Inertia::render('admin/users/Index', [
+            'users' => $users,
+            'counts' => [
+                'all' => (int) $counts->sum(),
+                'pending' => (int) ($counts['pending'] ?? 0),
+                'active' => (int) ($counts['active'] ?? 0),
+                'suspended' => (int) ($counts['suspended'] ?? 0),
+            ],
+            'filter' => $filter,
+        ]);
     }
 
     public function approve(User $user)
     {
         $user->update([
-            'status' => 'approved',
+            'status' => 'active',
         ]);
 
         $user->notify(
             new UserApprovedNotification()
         );
+
+        $this->toast('User approved.');
+
+        return back();
+    }
+
+    public function deny(User $user)
+    {
+        $user->update([
+            'status' => 'suspended',
+        ]);
+
+        $this->toast('Account suspended.');
 
         return back();
     }

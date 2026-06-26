@@ -43,12 +43,15 @@ return new class extends Migration
 
             // Status
             $table->enum('status', [
-                'draft',
                 'upcoming',
                 'open',
                 'closed',
                 'completed',
-            ])->default('draft')->index();
+            ])->default('upcoming')->index();
+
+            $table->boolean('is_published')
+                ->default(false)
+                ->after('status');
 
             $table->timestamps();
         });

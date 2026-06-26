@@ -19,12 +19,19 @@ class EventCategoryController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(?Event $event = null)
     {
+        // When reached through /admin/events/{event}/setup the category form is
+        // scoped to a single draft event; otherwise it falls back to a picker.
+        $event?->load('categories');
+
         return Inertia::render('admin/event-categories/Create', [
-            'events' => Event::select('id', 'title')
-                ->orderBy('title')
-                ->get(),
+            'event' => $event,
+            'events' => $event
+                ? null
+                : Event::select('id', 'name')
+                    ->orderBy('name')
+                    ->get(),
         ]);
     }
 
@@ -34,19 +41,24 @@ class EventCategoryController extends Controller
             'event_id' => ['required', 'exists:events,id'],
             'name' => ['required', 'max:255'],
             'target_km' => ['required', 'numeric', 'min:1'],
+            'registration_limit' => ['nullable', 'integer', 'min:1'],
             'ranking_enabled' => ['required', 'boolean'],
         ]);
 
         EventCategory::create($validated);
 
-        return redirect()->route('event-categories.index');
+        $this->toast('Category added.');
+
+        // Stay on the setup page so the admin can keep adding categories;
+        // they leave via the "Done" button when finished.
+        return back();
     }
 
     public function edit(EventCategory $eventCategory)
     {
         return Inertia::render('admin/event-categories/Edit', [
             'category' => $eventCategory,
-            'events' => Event::select('id', 'title')->get(),
+            'events' => Event::select('id', 'name')->orderBy('name')->get(),
         ]);
     }
 
@@ -58,18 +70,21 @@ class EventCategoryController extends Controller
             'event_id' => ['required', 'exists:events,id'],
             'name' => ['required', 'max:255'],
             'target_km' => ['required', 'numeric', 'min:1'],
+            'registration_limit' => ['nullable', 'integer', 'min:1'],
             'ranking_enabled' => ['required', 'boolean'],
         ]);
 
         $eventCategory->update($validated);
 
-        return redirect()->route('event-categories.index');
+        return redirect()->route('admin.event-categories.index');
     }
 
     public function destroy(EventCategory $eventCategory)
     {
         $eventCategory->delete();
 
-        return redirect()->route('event-categories.index');
+        $this->toast('Category removed.');
+
+        return back();
     }
 }

@@ -10,7 +10,9 @@ interface RunnerHeroProps {
         name: string;
         initials: string;
         runner_code: string;
+        profile_photo?: string | null;
         verified?: boolean;
+        rank?: number | null;
         total_distance: number | string;
         events_completed: number | string;
     };
@@ -45,8 +47,16 @@ export default function RunnerHero({ runner, personal }: RunnerHeroProps) {
                 {/* identity */}
                 <div className="flex min-w-[240px] items-center gap-5">
                     <div className="relative">
-                        <div className="flex h-[92px] w-[92px] items-center justify-center rounded-[24px] border-2 border-lime bg-[linear-gradient(145deg,#2a3320,#0c0f0b)] font-display text-[38px] font-extrabold text-white shadow-[0_8px_24px_rgba(0,0,0,.4)]">
-                            {runner.initials}
+                        <div className="flex h-[92px] w-[92px] items-center justify-center overflow-hidden rounded-[24px] border-2 border-lime bg-[linear-gradient(145deg,#2a3320,#0c0f0b)] font-display text-[38px] font-extrabold text-white shadow-[0_8px_24px_rgba(0,0,0,.4)]">
+                            {runner.profile_photo ? (
+                                <img
+                                    src={`/storage/${runner.profile_photo}`}
+                                    alt={runner.name}
+                                    className="h-full w-full object-cover"
+                                />
+                            ) : (
+                                runner.initials
+                            )}
                         </div>
                         {runner.verified ? (
                             <span className="absolute -right-1.5 -bottom-1.5 rounded-full border-2 border-ink-900 bg-lime px-2 py-[3px] text-[10px] font-extrabold tracking-[.04em] text-ink-900">
@@ -58,9 +68,19 @@ export default function RunnerHero({ runner, personal }: RunnerHeroProps) {
                         <div className="mb-1 text-[11px] font-bold tracking-[.28em] text-lime uppercase">
                             Runner Profile
                         </div>
-                        <h1 className="m-0 font-display text-[clamp(30px,4.4vw,46px)] leading-[.92] font-extrabold text-white uppercase italic">
-                            {runner.name}
-                        </h1>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <h1 className="m-0 font-display text-[clamp(30px,4.4vw,46px)] leading-[.92] font-extrabold text-white uppercase italic">
+                                {runner.name}
+                            </h1>
+                            {runner.rank != null && (
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-lime/40 bg-lime/10 px-3 py-1 font-display text-lg font-extrabold italic text-lime">
+                                    #{runner.rank}
+                                    <span className="text-[10px] font-bold not-italic tracking-[.12em] text-[#8c9882] uppercase">
+                                        Overall
+                                    </span>
+                                </span>
+                            )}
+                        </div>
                         <div className="mt-2.5 inline-flex items-center gap-[7px] rounded-full border border-[#333c26] bg-white/[.06] px-3 py-[5px]">
                             <span className="text-[11px] tracking-[.1em] text-[#8c9882]">
                                 RUNNER CODE

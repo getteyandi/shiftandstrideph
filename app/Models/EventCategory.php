@@ -22,7 +22,7 @@ use Illuminate\Support\Carbon;
  *
  * @mixin Builder<EventCategory>
  */
-#[Fillable(['event_id', 'name', 'target_km', 'ranking_enabled', 'badge_id', 'certificate_template'])]
+#[Fillable(['event_id', 'name', 'target_km', 'sort_order', 'registration_limit', 'ranking_enabled', 'badge_id', 'certificate_template'])]
 class EventCategory extends Model
 {
     /**

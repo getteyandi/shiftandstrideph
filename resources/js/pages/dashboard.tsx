@@ -1,13 +1,11 @@
 import { Head } from '@inertiajs/react';
 
-import { Bell, Check, Award, FileText, Megaphone } from '@/lib/icons';
-import { type ComponentType } from 'react';
+import { Clock3 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import RunnerHero from '@/components/RunnerHero';
 import SectionHeader from '@/components/SectionHeader';
 import ActiveEventCard from '@/components/ActiveEventCard';
 import ProgressMeter from '@/components/ProgressMeter';
-import { LucideIcon } from 'lucide-react';
 
 /* ---- prop shapes (rename to match your controller payloads) -------------- */
 interface Runner {
@@ -15,6 +13,7 @@ interface Runner {
     initials: string;
     runner_code: string;
     verified?: boolean;
+    rank?: number | null;
     total_distance: number | string;
     events_completed: number | string;
 }
@@ -39,44 +38,30 @@ interface TopContribution {
     remaining_km: number;
     pct: number;
 }
-interface Notification {
+
+interface PendingRegistration {
     id: number | string;
-    type: 'approval' | 'badge' | 'certificate' | 'event' | string;
-    title: string;
-    body: string;
-    time: string;
+    event_name: string;
+    category_name: string;
+    target_km: number;
+    bib_number: string;
+    requested_at: string;
 }
 
 interface DashboardProps {
     runner: Runner;
     personal: { label: string; value: string | number }[];
     activeRegistrations: Registration[];
+    pendingRegistrations: PendingRegistration[];
     topContribution?: TopContribution | null;
-    notifications: Notification[];
 }
-
-/* Map notification type → icon + swatch (no emoji in chrome, HANDOFF §2). */
-const NOTIF_STYLE: Record<
-    string,
-    {
-        icon: LucideIcon;
-        bg: string;
-        fg: string;
-    }
-> = {
-    approval: { icon: Check, bg: '#eef7d8', fg: '#5f8c00' },
-    badge: { icon: Award, bg: '#fdf3d6', fg: '#b8860b' },
-    certificate: { icon: FileText, bg: '#e3eefc', fg: '#2563aa' },
-    event: { icon: Megaphone, bg: '#f0eafc', fg: '#7c4fc4' },
-    default: { icon: Bell, bg: '#eef7d8', fg: '#5f8c00' },
-};
 
 export default function Dashboard({
     runner,
     personal,
     activeRegistrations,
+    pendingRegistrations,
     topContribution,
-    notifications,
 }: DashboardProps) {
     return (
         <div>
@@ -102,6 +87,47 @@ export default function Dashboard({
                             ))}
                         </div>
                     </div>
+
+                    {/* Pending approval — below active events */}
+                    {pendingRegistrations.length > 0 && (
+                        <div className="col-span-full">
+                            <SectionHeader
+                                title="Pending Approval"
+                                aside={
+                                    <span className="text-[13px] font-semibold text-muted">
+                                        {pendingRegistrations.length} awaiting
+                                    </span>
+                                }
+                            />
+                            <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-[18px]">
+                                {pendingRegistrations.map((p) => (
+                                    <div
+                                        key={p.id}
+                                        className="flex items-center gap-4 rounded-[18px] border border-[#F2E2B8] bg-[#FFFBEF] p-[18px]"
+                                    >
+                                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-[#FEF3C7] text-[#B07D00]">
+                                            <Clock3 size={20} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="truncate text-[15px] font-bold text-ink">
+                                                {p.event_name}
+                                            </div>
+                                            <div className="text-[12.5px] text-muted">
+                                                {p.category_name} · {p.target_km}{' '}
+                                                KM · Bib {p.bib_number}
+                                            </div>
+                                            <div className="mt-0.5 text-[11px] font-semibold text-[#B07D00]">
+                                                Requested {p.requested_at}
+                                            </div>
+                                        </div>
+                                        <span className="shrink-0 rounded-full bg-[#FEF3C7] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[.05em] text-[#92600A]">
+                                            Pending
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Top contribution */}
                     {topContribution ? (
@@ -160,45 +186,6 @@ export default function Dashboard({
                             </div>
                         </div>
                     ) : null}
-
-                    {/* Notifications */}
-                    <div>
-                        <SectionHeader title="Notifications" />
-                        <div className="overflow-hidden rounded-[18px] border border-line bg-card">
-                            {notifications.map((nt) => {
-                                const s =
-                                    NOTIF_STYLE[nt.type] ?? NOTIF_STYLE.default;
-                                const Icon = s.icon;
-                                return (
-                                    <div
-                                        key={nt.id}
-                                        className="flex gap-3 border-b border-[#F0F2EA] px-[18px] py-[15px] last:border-b-0"
-                                    >
-                                        <div
-                                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px]"
-                                            style={{
-                                                background: s.bg,
-                                                color: s.fg,
-                                            }}
-                                        >
-                                            <Icon size={17} />
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="text-sm font-bold text-ink">
-                                                {nt.title}
-                                            </div>
-                                            <div className="mt-px text-[13px] text-muted-2">
-                                                {nt.body}
-                                            </div>
-                                        </div>
-                                        <span className="text-[11px] font-semibold whitespace-nowrap text-[#a3a99a]">
-                                            {nt.time}
-                                        </span>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

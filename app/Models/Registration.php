@@ -46,6 +46,7 @@ use Illuminate\Support\Carbon;
     'bib_number',
 
     'status',
+    'rejection_reason',
 
     'completed_km',
     'activity_count',

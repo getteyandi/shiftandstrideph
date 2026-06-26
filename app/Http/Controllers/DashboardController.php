@@ -29,6 +29,35 @@ class DashboardController extends Controller
             ->whereIn('status', ['approved', 'completed'])
             ->get();
 
+        // Overall contribution rank (position by total approved distance).
+        $totals = Registration::query()
+            ->whereIn('status', ['approved', 'completed'])
+            ->selectRaw('user_id, SUM(completed_km) as total')
+            ->groupBy('user_id')
+            ->havingRaw('SUM(completed_km) > 0')
+            ->orderByDesc('total')
+            ->pluck('user_id')
+            ->values();
+
+        $rankIndex = $totals->search($user->id);
+        $rank = $rankIndex === false ? null : $rankIndex + 1;
+
+        $pendingRegistrations = Registration::with([
+            'eventCategory.event',
+        ])
+            ->where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->latest()
+            ->get()
+            ->map(fn (Registration $registration) => [
+                'id' => $registration->id,
+                'event_name' => $registration->eventCategory?->event?->name,
+                'category_name' => $registration->eventCategory?->name,
+                'target_km' => (float) ($registration->eventCategory?->target_km ?? 0),
+                'bib_number' => $registration->bib_number,
+                'requested_at' => $registration->created_at?->format('M j, Y'),
+            ]);
+
         return Inertia::render('dashboard', [
 
             'runner' => [
@@ -40,7 +69,11 @@ class DashboardController extends Controller
 
                 'runner_code' => $user->runner_code,
 
+                'profile_photo' => $user->profile_photo,
+
                 'verified' => $user->verified,
+
+                'rank' => $rank,
 
                 'total_distance' => $registrations->sum('completed_km'),
 
@@ -103,9 +136,9 @@ class DashboardController extends Controller
                 ];
             }),
 
-            'topContribution' => null, // TODO
+            'pendingRegistrations' => $pendingRegistrations,
 
-            'notifications' => [], // TODO
+            'topContribution' => null, // TODO
 
         ]);
     }

@@ -11,61 +11,74 @@ use Inertia\Inertia;
 
 class RegistrationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
 
+        $filter = $request->query('filter', 'active');
+
+        $statusMap = [
+            'active' => ['open', 'upcoming'],
+            'open' => ['open'],
+            'upcoming' => ['upcoming'],
+            'past' => ['closed', 'completed'],
+        ];
+
         $events = Event::with([
-            'categories' => fn($query) => $query->orderBy('sort_order'),
+            'categories' => fn ($query) => $query->orderBy('sort_order'),
         ])
+            ->where('is_published', true)
+            ->when(
+                isset($statusMap[$filter]),
+                fn ($query) => $query->whereIn('status', $statusMap[$filter]),
+            )
             ->orderByDesc('start_date')
             ->get();
 
+        // The runner's own join history across every event/category (paginated).
+        $joinedEvents = Registration::with(['eventCategory.event'])
+            ->where('user_id', $user->id)
+            ->latest()
+            ->paginate(5, ['*'], 'joined')
+            ->withQueryString()
+            ->through(fn (Registration $registration) => [
+                'id' => $registration->id,
+                'event_name' => $registration->eventCategory?->event?->name,
+                'category_name' => $registration->eventCategory?->name,
+                'target_km' => (float) ($registration->eventCategory?->target_km ?? 0),
+                'completed_km' => (float) $registration->completed_km,
+                'bib_number' => $registration->bib_number,
+                'status' => $registration->status,
+                'joined_at' => $registration->created_at?->format('M j, Y'),
+            ]);
+
         return Inertia::render('events/Index', [
-            'events' => $events->map(function (Event $event) use ($user) {
+            'events' => $events->map(function (Event $event) {
 
                 return [
-
                     'id' => $event->id,
-
                     'name' => $event->name,
-
                     'location' => $event->location,
-
                     'dates' => sprintf(
                         '%s - %s',
                         $event->start_date->format('M j'),
                         $event->end_date->format('M j, Y'),
                     ),
-
                     'status' => ucfirst($event->status),
-
                     'joined_count' => $event
                         ->categories
-                        ->sum(fn($category) => $category->registrations()->count()),
-
+                        ->sum(fn ($category) => $category->registrations()->count()),
                     'categories' => $event
                         ->categories
                         ->pluck('name')
                         ->values(),
-
                     'banner' => $event->banner,
-
-                    // Optional for later
-                    // 'is_registered' => $event->categories
-                    //     ->contains(fn ($category) =>
-                    //         $category->registrations()
-                    //             ->where('user_id', $user->id)
-                    //             ->exists()),
                 ];
             }),
 
-            'filters' => [
-                'All',
-                'Open',
-                'Marathon',
-                'Ultra',
-            ],
+            'joinedEvents' => $joinedEvents,
+
+            'filter' => $filter,
         ]);
     }
 
@@ -138,15 +151,21 @@ class RegistrationController extends Controller
             ],
         ]);
 
+        // Can't join a closed/completed (history) event.
+        if ($event->isHistory()) {
+            $this->toast('Registration for this event is closed.', 'error');
+
+            return back();
+        }
+
         $alreadyRegistered = Registration::where('user_id', $user->id)
             ->where('event_category_id', $validated['event_category_id'])
             ->exists();
 
         if ($alreadyRegistered) {
-            return back()->with(
-                'error',
-                'You are already registered for this category.'
-            );
+            $this->toast('You are already registered for this category.', 'error');
+
+            return back();
         }
 
         $registrationCount = Registration::where(
@@ -154,7 +173,7 @@ class RegistrationController extends Controller
             $validated['event_category_id']
         )->count() + 1;
 
-        Registration::create([
+        $registration = Registration::create([
 
             'user_id' => $user->id,
 
@@ -165,7 +184,7 @@ class RegistrationController extends Controller
                 $registrationCount
             ),
 
-            'status' => 'approved',
+            'status' => 'pending',
 
             'completed_km' => 0,
 
@@ -173,16 +192,17 @@ class RegistrationController extends Controller
 
             'last_activity_at' => null,
 
-            'approved_at' => now(),
+            'approved_at' => null,
 
         ]);
 
-        return redirect()
-            ->route('dashboard')
-            ->with(
-                'success',
-                'You have successfully joined the event!'
-            );
+        // Close registration if this join filled the event's quota.
+        $registration->loadMissing('eventCategory.event');
+        $registration->eventCategory?->event?->closeIfQuotaReached();
+
+        $this->toast('Registration submitted! An admin will review it shortly.');
+
+        return redirect()->route('dashboard');
     }
 
     // public function store(Request $request)

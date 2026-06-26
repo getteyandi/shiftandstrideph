@@ -30,5 +30,21 @@ class DemoUserSeeder extends Seeder
             'email_verified_at' => now(),
             'password' => Hash::make('password'),
         ]);
+
+        $user = User::create([
+            'first_name' => 'SASPH',
+            'last_name' => 'Admin',
+            'email' => 'admin@example.com',
+            'status' => 'active',
+            'runner_code' => null,
+            'verified' => true,
+            'birthday' => '2002-04-15',
+            'gender' => 'Male',
+            'province' => 'Davao del Sur',
+            'city' => 'Davao City',
+            'role' => 'admin',
+            'email_verified_at' => now(),
+            'password' => Hash::make('password'),
+        ]);
     }
 }

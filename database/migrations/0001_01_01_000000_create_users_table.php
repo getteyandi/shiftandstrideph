@@ -53,6 +53,9 @@ return new class extends Migration
             $table->string('city')
                 ->nullable();
 
+            $table->enum('role', ['admin', 'participant'])
+                ->default('participant');
+
             // Authentication
             $table->timestamp('email_verified_at')
                 ->nullable();

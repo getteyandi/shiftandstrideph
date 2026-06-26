@@ -81,6 +81,22 @@
     }
 }
 
+/* =========================================================================
+   Dark mode — re-theme the structural surface tokens. Tailwind v4 emits
+   utilities as var(--color-*), so overriding these under `.dark` flips
+   bg-surface / bg-card / text-ink / borders / muted app-wide.
+   ========================================================================= */
+.dark {
+    --color-surface: #0b0e08;
+    --color-card: #14180e;
+    --color-ink: #e7ece0;
+    --color-ink-900: #060803;
+    --color-line: #242a1b;
+    --color-line-2: #2a3320;
+    --color-muted: #9aa68d;
+    --color-muted-2: #b6bfaa;
+}
+
 /* App defaults */
 @layer base {
     html,

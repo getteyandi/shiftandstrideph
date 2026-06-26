@@ -1,83 +1,86 @@
-import { useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
+import AppLayout from '@/layouts/app-layout';
+import EventForm, {
+    EventFormData,
+} from '@/components/admin/EventForm';
 
 export default function Create() {
-    const { data, setData, post, processing, errors } = useForm({
-        title: '',
-        description: '',
-        banner: '',
-        start_date: '',
-        end_date: '',
-        status: 'draft',
-    });
+    const { data, setData, post, processing, errors } =
+        useForm<EventFormData>({
+            name: '',
+            description: '',
+            location: '',
 
-    const submit = (e: React.FormEvent) => {
+            banner: null,
+
+            registration_start: '',
+            registration_end: '',
+
+            start_date: '',
+            end_date: '',
+
+            status: 'upcoming',
+        });
+
+    function submit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
 
-        post('/admin/events');
-    };
+        post('/admin/events', {
+            forceFormData: true,
+        });
+    }
 
     return (
-        <div className="p-6 max-w-2xl">
-            <h1 className="text-2xl font-bold mb-6">
-                Create Event
-            </h1>
+        <div>
+            <Head title="Create Event" />
 
-            <form onSubmit={submit} className="space-y-4">
-                <input
-                    className="w-full border rounded p-2"
-                    placeholder="Title"
-                    value={data.title}
-                    onChange={(e) =>
-                        setData('title', e.target.value)
-                    }
+            <div className="mx-auto max-w-7xl space-y-8 p-6">
+
+                {/* Hero */}
+
+                <div className="relative overflow-hidden rounded-[28px] border border-[#2a3120] bg-[linear-gradient(145deg,#12150d,#090b08)] p-8">
+
+                    <div
+                        className="pointer-events-none absolute inset-0"
+                        style={{
+                            background:
+                                'radial-gradient(400px 250px at 100% 0,rgba(166,226,18,.15),transparent 60%)',
+                        }}
+                    />
+
+                    <div className="relative">
+
+                        <div className="text-xs font-bold tracking-[.25em] uppercase text-lime">
+                            Administration
+                        </div>
+
+                        <h1 className="mt-2 font-display text-5xl font-black italic text-white">
+                            CREATE EVENT
+                        </h1>
+
+                        <p className="mt-3 max-w-xl text-[#98A08E]">
+                            Build a new virtual running event for
+                            Shift & Stride PH.
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <EventForm
+                    data={data}
+                    setData={setData}
+                    errors={errors}
+                    processing={processing}
+                    submit={submit}
+                    submitLabel="Create Event"
                 />
 
-                <textarea
-                    className="w-full border rounded p-2"
-                    placeholder="Description"
-                    value={data.description}
-                    onChange={(e) =>
-                        setData('description', e.target.value)
-                    }
-                />
-
-                <input
-                    type="date"
-                    className="w-full border rounded p-2"
-                    value={data.start_date}
-                    onChange={(e) =>
-                        setData('start_date', e.target.value)
-                    }
-                />
-
-                <input
-                    type="date"
-                    className="w-full border rounded p-2"
-                    value={data.end_date}
-                    onChange={(e) =>
-                        setData('end_date', e.target.value)
-                    }
-                />
-
-                <select
-                    className="w-full border rounded p-2"
-                    value={data.status}
-                    onChange={(e) =>
-                        setData('status', e.target.value)
-                    }
-                >
-                    <option value="draft">Draft</option>
-                    <option value="active">Active</option>
-                    <option value="archived">Archived</option>
-                </select>
-
-                <button
-                    disabled={processing}
-                    className="bg-blue-600 text-white px-4 py-2 rounded"
-                >
-                    Save Event
-                </button>
-            </form>
-        </div>
+            </div>
+            </div>
     );
 }
+
+Create.layout = (page: React.ReactNode) => (
+    <AppLayout active="events">{page}</AppLayout>
+);

@@ -25,19 +25,35 @@ const INK_BANNER = 'linear-gradient(135deg,#1a2412,#0c0f0b)';
  * SVG, status pill, category chips, joined count, and the ink→lime Join CTA.
  */
 export default function EventCard({ event, href }: EventCardProps) {
-    const open = event.status.toLowerCase() === 'open';
+    const status = event.status.toLowerCase();
+    const open = status === 'open';
+    const isHistory = status === 'closed' || status === 'completed';
+
+    const statusLabel = isHistory
+        ? status === 'completed'
+            ? 'Event Ended'
+            : 'Registration Closed'
+        : event.status;
+
     return (
         <article className="overflow-hidden rounded-[20px] border border-line bg-card shadow-[0_1px_2px_rgba(20,30,10,.05)]">
             <div
                 className="relative h-32 overflow-hidden"
-                style={{ background: event.banner || INK_BANNER }}
+                style={{ background: INK_BANNER }}
             >
+                {event.banner && (
+                    <img
+                        src={`/storage/${event.banner}`}
+                        alt={event.name}
+                        className="absolute inset-0 h-full w-full object-cover"
+                    />
+                )}
                 <div
                     aria-hidden
                     className="absolute inset-0"
                     style={{
                         background:
-                            'linear-gradient(180deg,transparent,rgba(8,10,7,.7))',
+                            'linear-gradient(180deg,rgba(8,10,7,.15),rgba(8,10,7,.75))',
                     }}
                 />
                 {/* dashed lime route line */}
@@ -61,10 +77,12 @@ export default function EventCard({ event, href }: EventCardProps) {
                         'absolute top-3.5 left-3.5 rounded-full px-[11px] py-[5px] text-[10.5px] font-extrabold tracking-[.1em] uppercase',
                         open
                             ? 'bg-lime text-ink-900'
-                            : 'bg-white/[.18] text-white',
+                            : isHistory
+                              ? 'bg-black/55 text-white'
+                              : 'bg-white/[.18] text-white',
                     )}
                 >
-                    {event.status}
+                    {statusLabel}
                 </span>
                 <div className="absolute inset-x-4 bottom-3">
                     <h3 className="m-0 font-display text-2xl leading-[.95] font-extrabold text-white uppercase italic [text-shadow:0_2px_12px_rgba(0,0,0,.5)]">
@@ -100,13 +118,21 @@ export default function EventCard({ event, href }: EventCardProps) {
                     <span className="text-[13px] font-semibold text-muted-2">
                         {event.joined_count} runners joined
                     </span>
-                    <Link
-                        href={href ?? `/events/${event.id}`}
-                        className="group inline-flex items-center gap-[7px] rounded-[11px] bg-ink-900 px-5 py-2.5 text-sm font-bold text-lime transition-colors hover:bg-lime hover:text-ink-900"
-                    >
-                        Join Event
-                        <ArrowRight size={15} strokeWidth={2.4} />
-                    </Link>
+                    {isHistory ? (
+                        <span className="inline-flex cursor-not-allowed items-center gap-[7px] rounded-[11px] bg-[#eceee7] px-5 py-2.5 text-sm font-bold text-[#9aa18d]">
+                            {status === 'completed'
+                                ? 'Event Ended'
+                                : 'Closed'}
+                        </span>
+                    ) : (
+                        <Link
+                            href={href ?? `/events/${event.id}`}
+                            className="group inline-flex items-center gap-[7px] rounded-[11px] bg-ink-900 px-5 py-2.5 text-sm font-bold text-lime transition-colors hover:bg-lime hover:text-ink-900"
+                        >
+                            {open ? 'Join Event' : 'View Event'}
+                            <ArrowRight size={15} strokeWidth={2.4} />
+                        </Link>
+                    )}
                 </div>
             </div>
         </article>

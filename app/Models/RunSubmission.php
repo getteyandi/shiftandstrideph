@@ -27,7 +27,7 @@ use Illuminate\Support\Carbon;
  *
  * @mixin Builder<RunSubmission>
  */
-#[Fillable(['user_id', 'distance', 'photo', 'notes', 'status', 'rejection_reason', 'reviewed_by', 'reviewed_at'])]
+#[Fillable(['user_id', 'registration_id', 'distance', 'photo', 'notes', 'status', 'rejection_reason', 'reviewed_by', 'reviewed_at'])]
 class RunSubmission extends Model
 {
     /**
@@ -38,6 +38,16 @@ class RunSubmission extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * The specific registration (event/category) this run counts toward.
+     *
+     * @return BelongsTo<Registration, $this>
+     */
+    public function registration(): BelongsTo
+    {
+        return $this->belongsTo(Registration::class);
     }
 
     /**

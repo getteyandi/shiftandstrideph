@@ -69,7 +69,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
     'gender',
     'province',
     'city',
-
+    'role',
     'password',
 ])]
 #[Hidden([

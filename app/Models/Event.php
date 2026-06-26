@@ -24,7 +24,19 @@ use Illuminate\Support\Carbon;
  *
  * @mixin Builder<Event>
  */
-#[Fillable(['title', 'slug', 'description', 'banner', 'start_date', 'end_date', 'status'])]
+#[Fillable([
+    'name',
+    'slug',
+    'description',
+    'banner',
+    'location',
+    'registration_start',
+    'registration_end',
+    'start_date',
+    'end_date',
+    'status',
+    'is_published',
+])]
 class Event extends Model
 {
     /**
@@ -38,6 +50,55 @@ class Event extends Model
     }
 
     /**
+     * Statuses that represent a finished/history event: viewable but locked
+     * (no editing, no new registrations).
+     */
+    public const HISTORY_STATUSES = ['closed', 'completed'];
+
+    /**
+     * Whether the event is in a read-only "history" state.
+     */
+    public function isHistory(): bool
+    {
+        return in_array($this->status, self::HISTORY_STATUSES, true);
+    }
+
+    /**
+     * Close registration once the quota is filled (event becomes history).
+     *
+     * Quota = sum of every category's registration_limit. If any category is
+     * unlimited (null limit) the event has no fixed capacity and is skipped.
+     */
+    public function closeIfQuotaReached(): void
+    {
+        if ($this->isHistory()) {
+            return;
+        }
+
+        $this->loadMissing('categories');
+
+        if (
+            $this->categories->isEmpty() ||
+            $this->categories->contains(
+                fn (EventCategory $category) => is_null($category->registration_limit)
+            )
+        ) {
+            return;
+        }
+
+        $quota = (int) $this->categories->sum('registration_limit');
+
+        $registered = Registration::query()
+            ->whereIn('event_category_id', $this->categories->pluck('id'))
+            ->whereIn('status', ['pending', 'approved', 'completed'])
+            ->count();
+
+        if ($quota > 0 && $registered >= $quota) {
+            $this->update(['status' => 'closed']);
+        }
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -45,8 +106,11 @@ class Event extends Model
     protected function casts(): array
     {
         return [
+            'registration_start' => 'datetime',
+            'registration_end' => 'datetime',
             'start_date' => 'datetime',
             'end_date' => 'datetime',
+            'is_published' => 'boolean',
         ];
     }
 }
