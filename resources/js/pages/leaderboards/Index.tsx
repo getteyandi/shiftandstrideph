@@ -204,17 +204,32 @@ export default function HallOfFame({
                     </p>
                 </div>
 
-                {/* ===== OVERALL CONTRIBUTION (podium) ===== */}
-                <BentoCard className="p-[clamp(20px,3vw,40px)]">
+                {/* ===== OVERALL CONTRIBUTION (spotlight podium) ===== */}
+                <BentoCard className="border-lime/45 p-[clamp(20px,3vw,44px)] shadow-[0_0_60px_rgba(166,226,18,.22)]">
+                    {/* spotlight beam */}
+                    <div
+                        aria-hidden
+                        className="pointer-events-none absolute -top-1/4 left-1/2 z-0 h-[150%] w-[62%] -translate-x-1/2 animate-[pulse2_4s_ease-in-out_infinite]"
+                        style={{
+                            background:
+                                'radial-gradient(closest-side, rgba(166,226,18,.18), transparent 70%)',
+                        }}
+                    />
+                    <div className="relative z-10">
+                    <div className="mb-2 flex items-center justify-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-lime/40 bg-lime/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[.2em] text-lime">
+                            <Trophy size={12} />
+                            The Spotlight
+                        </span>
+                    </div>
                     <div className="mb-8 flex items-center justify-center gap-3">
-                        <Trophy
-                            size={24}
-                            className="text-lime"
+                        <h2
+                            className="font-display text-[clamp(30px,4.5vw,54px)] font-black italic uppercase text-white"
                             style={{
-                                filter: 'drop-shadow(0 0 8px rgba(166,226,18,.7))',
+                                textShadow:
+                                    '0 0 22px rgba(166,226,18,.45), 0 0 60px rgba(166,226,18,.25)',
                             }}
-                        />
-                        <h2 className="font-display text-[clamp(24px,3.4vw,40px)] font-black italic uppercase text-white">
+                        >
                             Overall Contribution
                         </h2>
                     </div>
@@ -341,6 +356,7 @@ export default function HallOfFame({
                             )}
                         </>
                     )}
+                    </div>
                 </BentoCard>
 
                 {/* BENTO */}
@@ -548,7 +564,7 @@ export default function HallOfFame({
                         </div>
 
                         <span className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-lime px-3 py-1 text-[10px] font-extrabold uppercase tracking-[.12em] text-[#12150d]">
-                            Latest Finishes
+                            Last 24 Hours
                         </span>
 
                         {finishersSlice.length === 0 ? (

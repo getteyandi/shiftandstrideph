@@ -102,9 +102,10 @@ class LeaderboardController extends Controller
         return Registration::query()
             ->where('status', 'completed')
             ->whereNotNull('completed_at')
+            ->where('completed_at', '>=', now()->subDay())
             ->with(['user', 'eventCategory.event'])
             ->latest('completed_at')
-            ->take(8)
+            ->take(12)
             ->get()
             ->map(fn (Registration $registration) => [
                 'id' => $registration->id,

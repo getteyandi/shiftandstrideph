@@ -58,7 +58,32 @@ export interface EventFormData {
         | 'open'
         | 'closed'
         | 'completed';
+
+    preset: 'solo' | 'community' | 'group';
+    is_highlighted: boolean;
 }
+
+const PRESETS: {
+    value: EventFormData['preset'];
+    title: string;
+    desc: string;
+}[] = [
+    {
+        value: 'solo',
+        title: 'Solo Run',
+        desc: 'Standard event. Each runner logs on their own.',
+    },
+    {
+        value: 'community',
+        title: 'Community Run',
+        desc: 'Shows all participants, a shared progress bar, event & island rankings.',
+    },
+    {
+        value: 'group',
+        title: 'Group Run',
+        desc: 'Runners team up — solo, duo, or group — and compete as teams.',
+    },
+];
 
 interface Props {
     data: EventFormData;
@@ -238,6 +263,83 @@ export default function EventForm({
                         setData('status', status)
                     }
                 />
+            </div>
+
+            {/* Preset + highlight */}
+            <div className="space-y-5 rounded-3xl border border-line bg-card p-7">
+                <div>
+                    <h3 className="font-display text-2xl font-bold italic text-ink">
+                        Event Type
+                    </h3>
+                    <p className="mt-1 text-sm text-muted">
+                        How runners experience this event.
+                    </p>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                    {PRESETS.map((p) => {
+                        const on = data.preset === p.value;
+                        return (
+                            <button
+                                key={p.value}
+                                type="button"
+                                onClick={() => setData('preset', p.value)}
+                                className={`rounded-2xl border p-5 text-left transition ${
+                                    on
+                                        ? 'border-lime bg-[#F7FCEB] shadow'
+                                        : 'border-line bg-card hover:border-lime'
+                                }`}
+                            >
+                                <div className="font-display text-xl font-bold italic text-ink">
+                                    {p.title}
+                                </div>
+                                <div className="mt-1.5 text-sm text-muted">
+                                    {p.desc}
+                                </div>
+                                {on && (
+                                    <span className="mt-4 inline-flex rounded-full bg-lime px-3 py-1 text-xs font-bold uppercase text-[#12150d]">
+                                        Selected
+                                    </span>
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <button
+                    type="button"
+                    onClick={() =>
+                        setData('is_highlighted', !data.is_highlighted)
+                    }
+                    className={`flex w-full items-center justify-between rounded-2xl border p-5 text-left transition ${
+                        data.is_highlighted
+                            ? 'border-lime bg-[#F7FCEB]'
+                            : 'border-line bg-card hover:border-lime'
+                    }`}
+                >
+                    <div>
+                        <div className="font-semibold text-ink">
+                            Highlighted Event
+                        </div>
+                        <div className="text-sm text-muted">
+                            Feature this event at the top of the events page
+                            (only one can be highlighted).
+                        </div>
+                    </div>
+                    <span
+                        className={`relative h-6 w-11 rounded-full transition ${
+                            data.is_highlighted ? 'bg-lime' : 'bg-[#d8ddd0]'
+                        }`}
+                    >
+                        <span
+                            className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                                data.is_highlighted
+                                    ? 'left-[22px]'
+                                    : 'left-0.5'
+                            }`}
+                        />
+                    </span>
+                </button>
             </div>
 
             {/* Actions */}

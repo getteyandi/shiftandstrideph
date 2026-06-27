@@ -87,14 +87,119 @@
    bg-surface / bg-card / text-ink / borders / muted app-wide.
    ========================================================================= */
 .dark {
-    --color-surface: #0b0e08;
-    --color-card: #14180e;
-    --color-ink: #e7ece0;
+    --color-surface: #090c06;
+    --color-card: #161b0e;
+    --color-ink: #eef2e8;
     --color-ink-900: #060803;
-    --color-line: #242a1b;
-    --color-line-2: #2a3320;
-    --color-muted: #9aa68d;
-    --color-muted-2: #b6bfaa;
+    --color-line: #2f3824;
+    --color-line-2: #3a4530;
+    --color-muted: #9aa48c;
+    --color-muted-2: #c9d1be;
+}
+
+/* Dark-mode overrides for hard-coded light colors used across components, so
+   the theme reads as a cohesive dark surface (no white spots) with neon-green
+   accents instead of low-contrast greys. */
+.dark .bg-white,
+.dark .bg-\[\#f8faf3\],
+.dark .bg-\[\#f3f8e6\],
+.dark .bg-\[\#f8faf5\] {
+    background-color: var(--color-card) !important;
+}
+
+.dark .bg-\[\#eef7d8\],
+.dark .bg-\[\#EEF7D8\],
+.dark .bg-\[\#F7FCEB\],
+.dark .bg-\[\#f7fceb\],
+.dark .bg-\[\#f5f8ee\],
+.dark .bg-\[\#f7f9f1\],
+.dark .bg-\[\#e9f7cf\],
+.dark .bg-\[\#f6fbe8\] {
+    background-color: rgba(166, 226, 18, 0.12) !important;
+}
+
+.dark .bg-\[\#F0F2EA\],
+.dark .bg-\[\#EEF1E8\],
+.dark .bg-\[\#eef1e8\] {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.dark .bg-\[\#FFFBEF\] {
+    background-color: rgba(176, 125, 0, 0.1) !important;
+}
+
+/* Light borders → faint dark hairlines */
+.dark .border-\[\#dde3d5\],
+.dark .border-\[\#dfe4d6\],
+.dark .border-\[\#d9ded2\],
+.dark .border-\[\#e8ecdf\],
+.dark .border-\[\#e1e6d6\],
+.dark .border-\[\#dde1d5\],
+.dark .border-\[\#F0F2EA\],
+.dark .border-\[\#F2E2B8\],
+.dark .border-\[\#E4E8DD\],
+.dark .border-\[\#c8cfbb\] {
+    border-color: var(--color-line) !important;
+}
+
+/* Dark text on (now-dark) surfaces → readable light/muted */
+.dark .text-\[\#5A6152\],
+.dark .text-\[\#70766a\],
+.dark .text-\[\#3A4034\],
+.dark .text-\[\#4b5340\],
+.dark .text-\[\#5f6a52\] {
+    color: var(--color-muted-2) !important;
+}
+
+.dark .text-\[\#9aa18d\],
+.dark .text-\[\#92A084\],
+.dark .text-\[\#aeb4a4\],
+.dark .text-\[\#93a082\],
+.dark .text-\[\#bcc2b0\] {
+    color: var(--color-muted) !important;
+}
+
+/* Make the green accent text genuinely neon in dark mode */
+.dark .text-lime-deep,
+.dark .text-\[\#5f8c00\] {
+    color: var(--color-lime) !important;
+}
+
+/* Status pills — keep them legible as dark-mode badges instead of pale blocks.
+   Pending (amber) */
+.dark .bg-\[\#fff3d6\],
+.dark .bg-\[\#FEF3C7\],
+.dark .bg-\[\#FFF3D6\] {
+    background-color: rgba(224, 178, 86, 0.16) !important;
+}
+.dark .text-\[\#b07d00\],
+.dark .text-\[\#92600A\],
+.dark .text-\[\#8a6d1f\],
+.dark .text-\[\#8c6d1f\] {
+    color: #e7c074 !important;
+}
+
+/* Rejected / error (red) */
+.dark .bg-\[\#fde4e1\],
+.dark .bg-\[\#FEE2E2\],
+.dark .bg-\[\#fdecea\],
+.dark .bg-red-50 {
+    background-color: rgba(224, 96, 86, 0.15) !important;
+}
+.dark .text-\[\#c0392b\],
+.dark .text-\[\#B91C1C\],
+.dark .text-\[\#8c2f25\],
+.dark .text-red-600,
+.dark .text-red-500 {
+    color: #f2998d !important;
+}
+.dark .border-red-300 {
+    border-color: rgba(224, 96, 86, 0.4) !important;
+}
+
+/* Amber accents on warning surfaces */
+.dark .text-\[\#b07d00\] {
+    color: #e7c074 !important;
 }
 
 /* App defaults */
@@ -117,6 +222,21 @@
     ::-webkit-scrollbar-thumb {
         background: rgba(120, 130, 110, 0.35);
         border-radius: 99px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(120, 130, 110, 0.55);
+    }
+    .dark ::-webkit-scrollbar-thumb {
+        background: rgba(166, 226, 18, 0.22);
+    }
+    .dark ::-webkit-scrollbar-thumb:hover {
+        background: rgba(166, 226, 18, 0.4);
+    }
+    /* Visible keyboard focus everywhere (quality floor) */
+    :focus-visible {
+        outline: 2px solid var(--color-lime);
+        outline-offset: 2px;
+        border-radius: 6px;
     }
     /* Respect reduced-motion (quality floor) */
     @media (prefers-reduced-motion: reduce) {

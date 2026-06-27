@@ -55,6 +55,7 @@ class RunSubmissionController extends Controller
                 'proof_thumb_url' => $submission->photo
                     ? "/storage/{$submission->photo}"
                     : null,
+                'proof_link' => $submission->proof_link,
             ]);
 
         return Inertia::render('run-submissions/Index', [
@@ -77,7 +78,9 @@ class RunSubmissionController extends Controller
             ],
 
             'distance' => ['required', 'numeric', 'min:0.1'],
-            'photo' => ['required', 'image', 'max:5120'],
+            'proof_type' => ['required', 'in:photo,link'],
+            'photo' => ['required_if:proof_type,photo', 'nullable', 'image', 'max:5120'],
+            'proof_link' => ['required_if:proof_type,link', 'nullable', 'url', 'max:500'],
             'notes' => ['nullable', 'string'],
         ]);
 
@@ -101,20 +104,34 @@ class RunSubmissionController extends Controller
             }
         }
 
-        $path = $request
-            ->file('photo')
-            ->store('run-submissions', 'public');
+        $path = $validated['proof_type'] === 'photo'
+            ? $request->file('photo')->store('run-submissions', 'public')
+            : null;
 
         $submission = RunSubmission::create([
             'user_id' => $userId,
             'distance' => $validated['distance'],
             'photo' => $path,
+            'proof_link' => $validated['proof_type'] === 'link'
+                ? $validated['proof_link']
+                : null,
             'notes' => $validated['notes'] ?? null,
             'status' => 'pending',
         ]);
 
         // Link the submission to each chosen registration via the pivot.
         $submission->registrations()->sync($registrations->pluck('id'));
+
+        $runner = auth()->user();
+        $this->notifyUsers(
+            $this->admins(),
+            'New run to review',
+            "{$runner->full_name} submitted a "
+                . number_format((float) $validated['distance'], 2)
+                . ' km run for review.',
+            route('admin.run-submissions.index'),
+            'registration',
+        );
 
         $this->toast('Run submitted for review.');
 

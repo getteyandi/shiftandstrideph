@@ -49,6 +49,14 @@ class AdminUserController extends Controller
             new UserApprovedNotification()
         );
 
+        $this->notifyUsers(
+            $user,
+            'Account approved',
+            'Welcome aboard! Your account is now active — explore events and start running.',
+            route('dashboard'),
+            'approval',
+        );
+
         $this->toast('User approved.');
 
         return back();

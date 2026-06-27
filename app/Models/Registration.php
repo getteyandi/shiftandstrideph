@@ -42,6 +42,7 @@ use Illuminate\Support\Carbon;
 #[Fillable([
     'user_id',
     'event_category_id',
+    'group_id',
 
     'bib_number',
 
@@ -75,6 +76,16 @@ class Registration extends Model
     public function eventCategory(): BelongsTo
     {
         return $this->belongsTo(EventCategory::class);
+    }
+
+    /**
+     * The team this registration belongs to (group-preset events).
+     *
+     * @return BelongsTo<EventGroup, $this>
+     */
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(EventGroup::class, 'group_id');
     }
 
     /**

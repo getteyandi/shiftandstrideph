@@ -15,6 +15,8 @@ interface Event {
     start_date: string | null;
     end_date: string | null;
     status: EventFormData['status'];
+    preset: EventFormData['preset'];
+    is_highlighted: boolean;
 }
 
 /** ISO string -> "YYYY-MM-DDTHH:mm" for <input type="datetime-local">. */
@@ -41,6 +43,9 @@ export default function Edit({ event }: { event: Event }) {
             end_date: toDate(event.end_date),
 
             status: event.status ?? 'upcoming',
+
+            preset: event.preset ?? 'solo',
+            is_highlighted: !!event.is_highlighted,
         });
 
     function submit(e: React.FormEvent<HTMLFormElement>) {

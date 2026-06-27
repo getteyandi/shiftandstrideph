@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Registration;
 use App\Models\RunSubmission;
 use App\Notifications\RunApprovedNotification;
 use App\Notifications\RunRejectedNotification;
@@ -45,6 +46,7 @@ class AdminRunSubmissionController extends Controller
                     'photo_url' => $submission->photo
                         ? "/storage/{$submission->photo}"
                         : null,
+                    'proof_link' => $submission->proof_link,
                     'notes' => $submission->notes,
                     'rejection_reason' => $submission->rejection_reason,
                 ];
@@ -82,6 +84,9 @@ class AdminRunSubmissionController extends Controller
             'reviewed_at' => now(),
         ]);
 
+        // Snapshot the runner's overall rank before crediting this run.
+        $rankBefore = $this->overallRank($runSubmission->user_id);
+
         // Credit every registration the run was submitted against. Each one is
         // capped at its own target so a 5 km run on a 4 km goal only shows 4 km.
         $registrations = $runSubmission->registrations()
@@ -115,6 +120,36 @@ class AdminRunSubmissionController extends Controller
             new RunApprovedNotification()
         );
 
+        // Run-approved notification links to the (first) event's live board.
+        $eventId = $registrations->first()?->eventCategory?->event_id;
+        $boardUrl = $eventId
+            ? route('events.board', $eventId)
+            : route('my-runs.index');
+
+        $this->notifyUsers(
+            $runSubmission->user,
+            'Run approved',
+            number_format((float) $runSubmission->distance, 2) . ' km has been credited to your event progress.',
+            $boardUrl,
+            'approval',
+        );
+
+        // Climbing into the overall Top 20 deserves its own notification.
+        $rankAfter = $this->overallRank($runSubmission->user_id);
+        if (
+            $rankAfter !== null
+            && $rankAfter <= 20
+            && ($rankBefore === null || $rankBefore > 20)
+        ) {
+            $this->notifyUsers(
+                $runSubmission->user,
+                "You're in the Top 20! 🏆",
+                "You've climbed to #{$rankAfter} on the overall leaderboard. Keep it up!",
+                route('leaderboards.index'),
+                'approval',
+            );
+        }
+
         $this->toast('Run approved. Distance credited.');
 
         return back();
@@ -139,8 +174,36 @@ class AdminRunSubmissionController extends Controller
             new RunRejectedNotification()
         );
 
+        $this->notifyUsers(
+            $runSubmission->user,
+            'Run rejected',
+            "Your run submission was rejected: {$validated['rejection_reason']}.",
+            route('my-runs.index'),
+            'rejection',
+        );
+
         $this->toast('Run submission rejected.');
 
         return back();
+    }
+
+    /**
+     * The runner's position on the overall leaderboard (by total approved +
+     * completed distance), or null if they haven't logged any distance.
+     */
+    private function overallRank(int $userId): ?int
+    {
+        $order = Registration::query()
+            ->whereIn('status', ['approved', 'completed'])
+            ->selectRaw('user_id, SUM(completed_km) as total')
+            ->groupBy('user_id')
+            ->havingRaw('SUM(completed_km) > 0')
+            ->orderByDesc('total')
+            ->pluck('user_id')
+            ->values();
+
+        $index = $order->search($userId);
+
+        return $index === false ? null : $index + 1;
     }
 }

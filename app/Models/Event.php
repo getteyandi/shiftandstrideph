@@ -36,6 +36,8 @@ use Illuminate\Support\Carbon;
     'end_date',
     'status',
     'is_published',
+    'is_highlighted',
+    'preset',
 ])]
 class Event extends Model
 {
@@ -47,6 +49,16 @@ class Event extends Model
     public function categories(): HasMany
     {
         return $this->hasMany(EventCategory::class);
+    }
+
+    /**
+     * Teams for a group-preset event.
+     *
+     * @return HasMany<EventGroup, $this>
+     */
+    public function groups(): HasMany
+    {
+        return $this->hasMany(EventGroup::class);
     }
 
     /**
@@ -111,6 +123,7 @@ class Event extends Model
             'start_date' => 'datetime',
             'end_date' => 'datetime',
             'is_published' => 'boolean',
+            'is_highlighted' => 'boolean',
         ];
     }
 }

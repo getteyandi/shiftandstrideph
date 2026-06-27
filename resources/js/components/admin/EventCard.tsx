@@ -7,6 +7,7 @@ import {
     Trash2,
     Eye,
     Lock,
+    Star,
 } from 'lucide-react';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
@@ -27,8 +28,16 @@ interface Event {
     start_date: string;
     end_date: string;
     status: string;
+    is_highlighted?: boolean;
+    preset?: 'solo' | 'community' | 'group';
     categories?: Category[];
 }
+
+const PRESET_LABEL: Record<string, string> = {
+    solo: 'Solo Run',
+    community: 'Community Run',
+    group: 'Group Run',
+};
 
 interface Props {
     event: Event;
@@ -47,6 +56,13 @@ export default function EventCard({ event }: Props) {
             onFinish: () => setConfirmOpen(false),
         });
     };
+
+    const toggleHighlight = () =>
+        router.post(
+            `/admin/events/${event.id}/highlight`,
+            {},
+            { preserveScroll: true },
+        );
 
     const statusColor = () => {
         switch (event.status) {
@@ -117,13 +133,26 @@ export default function EventCard({ event }: Props) {
 
                 <div className="relative flex h-full flex-col justify-between p-6">
 
-                    <div>
+                    <div className="flex items-center gap-2">
 
                         <span
                             className={`inline-flex rounded-full px-4 py-1 text-xs font-bold uppercase ${statusColor()}`}
                         >
                             {event.status}
                         </span>
+
+                        {event.is_highlighted && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-lime px-3 py-1 text-xs font-bold uppercase text-[#12150d]">
+                                <Star size={12} className="fill-[#12150d]" />
+                                Highlighted
+                            </span>
+                        )}
+
+                        {event.preset && (
+                            <span className="inline-flex rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase text-white">
+                                {PRESET_LABEL[event.preset] ?? event.preset}
+                            </span>
+                        )}
 
                     </div>
 
@@ -220,32 +249,64 @@ export default function EventCard({ event }: Props) {
                         </Link>
                     </div>
                 ) : (
-                    <div className="flex gap-2 pt-2">
-                        <Link
-                            href={`/admin/events/${event.id}/setup`}
-                            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#d9ded2] py-3 font-semibold transition hover:border-lime hover:bg-[#f5f8ee]"
-                        >
-                            <Eye size={17} />
-                            Manage
-                        </Link>
-
-                        <Link
-                            href={`/admin/events/${event.id}/edit`}
-                            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-lime py-3 font-bold text-black transition hover:brightness-95"
-                        >
-                            <Pencil size={17} />
-                            Edit
-                        </Link>
-
+                    <div className="space-y-2 pt-2">
                         <button
                             type="button"
-                            onClick={() => setConfirmOpen(true)}
-                            className="flex items-center justify-center rounded-xl border border-red-300 px-4 transition hover:bg-red-50"
+                            onClick={toggleHighlight}
+                            className={`flex w-full items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-bold transition ${
+                                event.is_highlighted
+                                    ? 'border-lime bg-[#F7FCEB] text-lime-deep'
+                                    : 'border-[#d9ded2] text-[#5A6152] hover:border-lime'
+                            }`}
                         >
-                            <Trash2 size={18} className="text-red-500" />
+                            <Star
+                                size={16}
+                                className={
+                                    event.is_highlighted
+                                        ? 'fill-lime text-lime-deep'
+                                        : ''
+                                }
+                            />
+                            {event.is_highlighted
+                                ? 'Highlighted Event'
+                                : 'Set as Highlighted'}
                         </button>
+
+                        <div className="flex gap-2">
+                            <Link
+                                href={`/admin/events/${event.id}/setup`}
+                                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#d9ded2] py-3 font-semibold transition hover:border-lime hover:bg-[#f5f8ee]"
+                            >
+                                <Eye size={17} />
+                                Manage
+                            </Link>
+
+                            <Link
+                                href={`/admin/events/${event.id}/edit`}
+                                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-lime py-3 font-bold text-black transition hover:brightness-95"
+                            >
+                                <Pencil size={17} />
+                                Edit
+                            </Link>
+
+                            <button
+                                type="button"
+                                onClick={() => setConfirmOpen(true)}
+                                className="flex items-center justify-center rounded-xl border border-red-300 px-4 transition hover:bg-red-50"
+                            >
+                                <Trash2 size={18} className="text-red-500" />
+                            </button>
+                        </div>
                     </div>
                 )}
+
+                <Link
+                    href={`/events/${event.id}/board`}
+                    className="flex items-center justify-center gap-2 rounded-xl border border-[#d9ded2] py-2.5 text-sm font-semibold text-[#5A6152] transition hover:border-lime hover:text-lime-deep"
+                >
+                    <Eye size={15} />
+                    Live Board
+                </Link>
 
             </div>
 

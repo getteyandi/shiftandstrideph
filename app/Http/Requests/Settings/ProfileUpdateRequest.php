@@ -2,21 +2,33 @@
 
 namespace App\Http\Requests\Settings;
 
-use App\Concerns\ProfileValidationRules;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ProfileUpdateRequest extends FormRequest
 {
-    use ProfileValidationRules;
-
     /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
+     * @return array<string, mixed>
      */
     public function rules(): array
     {
-        return $this->profileRules($this->user()->id);
+        return [
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users')->ignore($this->user()->id),
+            ],
+            'gender' => ['required', 'in:Male,Female,Prefer not to say'],
+            'birthday' => ['required', 'date', 'before:today'],
+            'province' => ['required', 'string', 'max:255'],
+            'city' => ['required', 'string', 'max:255'],
+            'island' => ['required', 'in:Luzon,Visayas,Mindanao'],
+            'address' => ['required', 'string', 'max:500'],
+            'profile_photo' => ['nullable', 'image', 'max:5120'],
+        ];
     }
 }

@@ -46,7 +46,9 @@ const STATUS_PILL: Record<string, { bg: string; fg: string }> = {
 
 interface FormData {
     registration_ids: (number | string)[];
+    proof_type: 'photo' | 'link';
     photo: File | null;
+    proof_link: string;
     distance: string;
     notes: string;
     [key: string]: (number | string)[] | string | File | null;
@@ -67,7 +69,9 @@ export default function SubmitRun({
                 activeRegistrations.length === 1
                     ? [activeRegistrations[0].id]
                     : [],
+            proof_type: 'photo',
             photo: null,
+            proof_link: '',
             distance: '',
             notes: '',
         });
@@ -92,7 +96,7 @@ export default function SubmitRun({
         post('/run-submissions', {
             forceFormData: true,
             onSuccess: () => {
-                reset('photo', 'distance', 'notes');
+                reset('photo', 'proof_link', 'distance', 'notes');
                 setPreview(null);
             },
         });
@@ -119,43 +123,101 @@ export default function SubmitRun({
                     {/* form */}
                     <div className="rounded-[20px] border border-line bg-card p-6">
                         <div className="mb-2.5 text-[11px] font-bold tracking-[.16em] text-[#9aa18d] uppercase">
-                            Proof Photo
+                            Proof of Run
                         </div>
 
-                        <label className="group flex h-[190px] cursor-pointer flex-col items-center justify-center gap-2.5 overflow-hidden rounded-2xl border-2 border-dashed border-[#c8cfbb] bg-[#f8faf3] text-center transition-colors hover:border-lime hover:bg-[#f3f8e6]">
-                            <input
-                                ref={fileInput}
-                                type="file"
-                                accept="image/png,image/jpeg"
-                                className="sr-only"
-                                onChange={(e) => onFile(e.target.files?.[0])}
-                            />
-                            {preview ? (
-                                <img
-                                    src={preview}
-                                    alt="Selected proof"
-                                    className="h-full w-full object-cover"
+                        {/* proof type toggle */}
+                        <div className="mb-3 grid grid-cols-2 gap-2">
+                            {(
+                                [
+                                    ['photo', 'Upload Photo'],
+                                    ['link', 'Paste Link'],
+                                ] as const
+                            ).map(([t, label]) => {
+                                const on = data.proof_type === t;
+                                return (
+                                    <button
+                                        key={t}
+                                        type="button"
+                                        onClick={() => setData('proof_type', t)}
+                                        className={cn(
+                                            'rounded-xl border px-3 py-2.5 text-sm font-bold transition',
+                                            on
+                                                ? 'border-lime bg-[#F7FCEB] text-ink'
+                                                : 'border-line text-muted hover:border-lime',
+                                        )}
+                                    >
+                                        {label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {data.proof_type === 'photo' ? (
+                            <>
+                                <label className="group flex h-[190px] cursor-pointer flex-col items-center justify-center gap-2.5 overflow-hidden rounded-2xl border-2 border-dashed border-line bg-surface text-center transition-colors hover:border-lime">
+                                    <input
+                                        ref={fileInput}
+                                        type="file"
+                                        accept="image/png,image/jpeg"
+                                        className="sr-only"
+                                        onChange={(e) =>
+                                            onFile(e.target.files?.[0])
+                                        }
+                                    />
+                                    {preview ? (
+                                        <img
+                                            src={preview}
+                                            alt="Selected proof"
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <>
+                                            <div className="flex h-[54px] w-[54px] items-center justify-center rounded-[15px] bg-ink-900 text-lime">
+                                                <Upload
+                                                    size={24}
+                                                    strokeWidth={2}
+                                                />
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-ink">
+                                                    Drop your watch / treadmill
+                                                    photo
+                                                </div>
+                                                <div className="mt-0.5 text-[12.5px] text-muted">
+                                                    PNG or JPG · proof of distance
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </label>
+                                {errors.photo && (
+                                    <p className="mt-2 text-sm font-medium text-red-500">
+                                        {errors.photo}
+                                    </p>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <input
+                                    type="url"
+                                    value={data.proof_link}
+                                    onChange={(e) =>
+                                        setData('proof_link', e.target.value)
+                                    }
+                                    placeholder="https://www.strava.com/activities/..."
+                                    className="w-full rounded-2xl border-[1.5px] border-line-2 px-4 py-4 text-sm text-ink outline-none focus:border-lime"
                                 />
-                            ) : (
-                                <>
-                                    <div className="flex h-[54px] w-[54px] items-center justify-center rounded-[15px] bg-ink-900 text-lime">
-                                        <Upload size={24} strokeWidth={2} />
-                                    </div>
-                                    <div>
-                                        <div className="font-bold text-ink">
-                                            Drop your watch / treadmill photo
-                                        </div>
-                                        <div className="mt-0.5 text-[12.5px] text-muted">
-                                            PNG or JPG · proof of distance
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                        </label>
-                        {errors.photo && (
-                            <p className="mt-2 text-sm font-medium text-red-500">
-                                {errors.photo}
-                            </p>
+                                <p className="mt-2 text-[12.5px] text-muted">
+                                    Paste a Strava (or other app) activity link
+                                    as proof.
+                                </p>
+                                {errors.proof_link && (
+                                    <p className="mt-2 text-sm font-medium text-red-500">
+                                        {errors.proof_link}
+                                    </p>
+                                )}
+                            </>
                         )}
 
                         <div className="mt-5 grid grid-cols-2 gap-3.5">
@@ -288,8 +350,10 @@ export default function SubmitRun({
                                 disabled={
                                     processing ||
                                     data.registration_ids.length === 0 ||
-                                    !data.photo ||
-                                    !data.distance
+                                    !data.distance ||
+                                    (data.proof_type === 'photo'
+                                        ? !data.photo
+                                        : !data.proof_link.trim())
                                 }
                                 className="mt-[18px] flex w-full items-center justify-center gap-2 rounded-[13px] bg-lime px-4 py-[15px] font-display text-[17px] font-extrabold tracking-[.03em] text-ink-900 uppercase italic transition-colors hover:bg-[#b8f032] disabled:cursor-not-allowed disabled:opacity-60"
                             >

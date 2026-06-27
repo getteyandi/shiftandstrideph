@@ -12,6 +12,7 @@ import {
     MapPin,
     Hash,
     Maximize2,
+    ExternalLink as LinkIcon,
 } from 'lucide-react';
 
 interface AdminStat {
@@ -33,6 +34,7 @@ interface Submission {
     submitted_at: string;
     status: string; // 'pending' | 'approved' | 'rejected'
     photo_url?: string | null;
+    proof_link?: string | null;
     notes?: string | null;
     rejection_reason?: string | null;
 }
@@ -153,28 +155,38 @@ export default function Verification({
                                 className="flex gap-4 rounded-[20px] border border-line bg-card p-4"
                             >
                                 {/* PROOF PHOTO — click to enlarge for crosschecking */}
-                                <button
-                                    type="button"
-                                    onClick={() => s.photo_url && setZoom(s)}
-                                    className="group relative h-28 w-28 shrink-0 overflow-hidden rounded-[14px] bg-[linear-gradient(135deg,#3a4a22,#161c0e)]"
-                                >
-                                    {s.photo_url ? (
-                                        <>
-                                            <img
-                                                src={s.photo_url}
-                                                alt="Run proof"
-                                                className="h-full w-full object-cover"
-                                            />
-                                            <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition group-hover:bg-black/40 group-hover:opacity-100">
-                                                <Maximize2 size={20} />
-                                            </span>
-                                        </>
-                                    ) : (
-                                        <span className="flex h-full w-full items-center justify-center text-white/60">
-                                            <ImageIcon size={22} />
+                                {s.photo_url ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => setZoom(s)}
+                                        className="group relative h-28 w-28 shrink-0 overflow-hidden rounded-[14px] bg-[linear-gradient(135deg,#3a4a22,#161c0e)]"
+                                    >
+                                        <img
+                                            src={s.photo_url}
+                                            alt="Run proof"
+                                            className="h-full w-full object-cover"
+                                        />
+                                        <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition group-hover:bg-black/40 group-hover:opacity-100">
+                                            <Maximize2 size={20} />
                                         </span>
-                                    )}
-                                </button>
+                                    </button>
+                                ) : s.proof_link ? (
+                                    <a
+                                        href={s.proof_link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex h-28 w-28 shrink-0 flex-col items-center justify-center gap-1.5 rounded-[14px] border border-line bg-surface text-center text-lime-deep transition hover:border-lime"
+                                    >
+                                        <LinkIcon size={22} />
+                                        <span className="px-1 text-[10px] font-bold uppercase">
+                                            View Link
+                                        </span>
+                                    </a>
+                                ) : (
+                                    <span className="flex h-28 w-28 shrink-0 items-center justify-center rounded-[14px] bg-[linear-gradient(135deg,#3a4a22,#161c0e)] text-white/60">
+                                        <ImageIcon size={22} />
+                                    </span>
+                                )}
 
                                 {/* DETAILS */}
                                 <div className="flex min-w-0 flex-1 flex-col">

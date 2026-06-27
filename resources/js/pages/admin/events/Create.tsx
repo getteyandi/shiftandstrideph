@@ -20,6 +20,9 @@ export default function Create() {
             end_date: '',
 
             status: 'upcoming',
+
+            preset: 'solo',
+            is_highlighted: false,
         });
 
     function submit(e: React.FormEvent<HTMLFormElement>) {

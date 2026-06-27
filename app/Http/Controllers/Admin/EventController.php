@@ -74,6 +74,9 @@ class EventController extends Controller
                 'required',
                 'in:upcoming,open,closed,completed',
             ],
+
+            'preset' => ['required', 'in:solo,community,group'],
+            'is_highlighted' => ['boolean'],
         ]);
 
         if ($request->hasFile('banner')) {
@@ -96,6 +99,12 @@ class EventController extends Controller
         $validated['is_published'] = false;
 
         $event = Event::create($validated);
+
+        if ($event->is_highlighted) {
+            Event::where('id', '!=', $event->id)
+                ->where('is_highlighted', true)
+                ->update(['is_highlighted' => false]);
+        }
 
         $this->toast('Draft created. Now add its race categories.');
 
@@ -188,6 +197,9 @@ class EventController extends Controller
                 'required',
                 'in:upcoming,open,closed,completed',
             ],
+
+            'preset' => ['required', 'in:solo,community,group'],
+            'is_highlighted' => ['boolean'],
         ]);
 
         if ($request->hasFile('banner')) {
@@ -217,9 +229,37 @@ class EventController extends Controller
 
         $event->update($validated);
 
+        if ($event->is_highlighted) {
+            Event::where('id', '!=', $event->id)
+                ->where('is_highlighted', true)
+                ->update(['is_highlighted' => false]);
+        }
+
         $this->toast('Event updated successfully.');
 
         return redirect()->route('admin.events.index');
+    }
+
+    public function highlight(Event $event)
+    {
+        $makeHighlighted = ! $event->is_highlighted;
+
+        // Only one event can be highlighted at a time.
+        if ($makeHighlighted) {
+            Event::where('id', '!=', $event->id)
+                ->where('is_highlighted', true)
+                ->update(['is_highlighted' => false]);
+        }
+
+        $event->update(['is_highlighted' => $makeHighlighted]);
+
+        $this->toast(
+            $makeHighlighted
+                ? 'Event set as highlighted.'
+                : 'Event removed from highlight.'
+        );
+
+        return back();
     }
 
     public function publish(Event $event)

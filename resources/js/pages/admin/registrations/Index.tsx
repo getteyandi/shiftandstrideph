@@ -6,6 +6,8 @@ import {
     X,
     MapPin,
     Hash,
+    Users,
+    Crown,
 } from 'lucide-react';
 
 import AppLayout from '@/layouts/app-layout';
@@ -29,7 +31,17 @@ interface Registration {
         event: {
             name: string;
             location: string;
+            preset?: string;
         } | null;
+    } | null;
+    team: {
+        id: number;
+        name: string;
+        type: string;
+        status: string;
+        is_captain: boolean;
+        members: { name: string; is_captain: boolean; status: string }[];
+        pending_invites: string[];
     } | null;
 }
 
@@ -157,8 +169,9 @@ export default function Index({ registrations, counts, filter }: Props) {
                         {visible.map((r) => (
                             <div
                                 key={r.id}
-                                className="flex flex-col gap-4 rounded-3xl border border-[#dde3d5] bg-card p-6 shadow-sm md:flex-row md:items-center md:justify-between"
+                                className="rounded-3xl border border-[#dde3d5] bg-card p-6 shadow-sm"
                             >
+                              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                                 <div className="flex items-start gap-4">
                                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#1c2114,#0c0f0b)] font-display text-base font-bold text-white">
                                         {`${r.user.first_name[0] ?? ''}${
@@ -237,6 +250,86 @@ export default function Index({ registrations, counts, filter }: Props) {
                                         </div>
                                     )}
                                 </div>
+                              </div>
+
+                              {/* Team details for group / duo registrations */}
+                              {r.team && (
+                                  <div className="mt-4 rounded-2xl border border-line bg-[#f8faf2] p-4">
+                                      <div className="flex flex-wrap items-center gap-2">
+                                          <Users
+                                              size={15}
+                                              className="text-lime-deep"
+                                          />
+                                          <span className="font-display text-base font-black italic text-ink">
+                                              {r.team.name}
+                                          </span>
+                                          <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold uppercase text-muted">
+                                              {r.team.type}
+                                          </span>
+                                          <span
+                                              className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${statusPill(
+                                                  r.team.status === 'approved'
+                                                      ? 'approved'
+                                                      : r.team.status ===
+                                                          'denied'
+                                                        ? 'rejected'
+                                                        : 'pending',
+                                              )}`}
+                                          >
+                                              Team {r.team.status}
+                                          </span>
+                                      </div>
+
+                                      <div className="mt-3 flex flex-wrap gap-2">
+                                          {r.team.members.map((m, i) => (
+                                              <span
+                                                  key={i}
+                                                  className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-2.5 py-1 text-xs font-semibold text-ink"
+                                              >
+                                                  {m.is_captain && (
+                                                      <Crown
+                                                          size={12}
+                                                          className="text-lime-deep"
+                                                      />
+                                                  )}
+                                                  {m.name}
+                                                  <span
+                                                      className={`rounded-full px-1.5 py-px text-[9px] font-bold uppercase ${statusPill(
+                                                          m.status,
+                                                      )}`}
+                                                  >
+                                                      {m.status}
+                                                  </span>
+                                              </span>
+                                          ))}
+                                          {r.team.pending_invites.map(
+                                              (name, i) => (
+                                                  <span
+                                                      key={`p${i}`}
+                                                      className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-[#d9b94a] bg-white px-2.5 py-1 text-xs font-semibold text-[#8a6d1f]"
+                                                  >
+                                                      {name}
+                                                      <span className="rounded-full bg-[#fff3d6] px-1.5 py-px text-[9px] font-bold uppercase text-[#b07d00]">
+                                                          invited
+                                                      </span>
+                                                  </span>
+                                              ),
+                                          )}
+                                      </div>
+
+                                      {r.team.pending_invites.length > 0 && (
+                                          <p className="mt-2 text-[11px] font-semibold text-[#b07d00]">
+                                              Waiting on{' '}
+                                              {r.team.pending_invites.length}{' '}
+                                              invited runner
+                                              {r.team.pending_invites.length > 1
+                                                  ? 's'
+                                                  : ''}{' '}
+                                              to accept.
+                                          </p>
+                                      )}
+                                  </div>
+                              )}
                             </div>
                         ))}
                     </div>

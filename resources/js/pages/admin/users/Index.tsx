@@ -35,6 +35,8 @@ interface AppUser {
     gender: string | null;
     province: string | null;
     city: string | null;
+    island: string | null;
+    address: string | null;
     birthday: string | null;
     created_at: string;
 }
@@ -377,6 +379,15 @@ export default function Index({ users, counts, filter }: Props) {
                                 <Detail
                                     label="City"
                                     value={detail.city ?? '—'}
+                                />
+                                <Detail
+                                    label="Island"
+                                    value={detail.island ?? '—'}
+                                />
+                                <Detail
+                                    label="Address"
+                                    value={detail.address ?? '—'}
+                                    wide
                                 />
                                 <Detail
                                     label="Verified"

@@ -13,6 +13,8 @@ interface RunnerHeroProps {
         profile_photo?: string | null;
         verified?: boolean;
         rank?: number | null;
+        best_km?: number | string;
+        best_rank?: number | null;
         total_distance: number | string;
         events_completed: number | string;
     };
@@ -93,17 +95,36 @@ export default function RunnerHero({ runner, personal }: RunnerHeroProps) {
                 </div>
 
                 {/* headline stats */}
-                <div className="ml-auto flex flex-wrap gap-3.5">
+                <div className="ml-auto grid w-full max-w-[360px] grid-cols-2 gap-2.5 sm:w-auto">
                     <StatTile
                         variant="dark-accent"
                         label="Total Distance"
                         value={runner.total_distance}
                         unit="KM"
+                        className="min-w-0"
                     />
                     <StatTile
                         variant="dark"
                         label="Events Completed"
                         value={runner.events_completed}
+                        className="min-w-0"
+                    />
+                    <StatTile
+                        variant="dark"
+                        label="Best Distance"
+                        value={runner.best_km ?? 0}
+                        unit="KM"
+                        className="min-w-0"
+                    />
+                    <StatTile
+                        variant="dark"
+                        label="Best Rank"
+                        value={
+                            runner.best_rank != null
+                                ? `#${runner.best_rank}`
+                                : '—'
+                        }
+                        className="min-w-0"
                     />
                 </div>
             </div>

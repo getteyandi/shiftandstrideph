@@ -38,6 +38,8 @@ class EnsureProfileIsComplete
             && $user->gender
             && $user->province
             && $user->city
+            && $user->island
+            && $user->address
             && $user->profile_photo;
     }
 }

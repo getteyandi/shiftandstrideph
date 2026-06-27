@@ -7,6 +7,7 @@ import {
     ArrowRight,
     MapPin,
     Flag,
+    BarChart3,
 } from 'lucide-react';
 
 import AppLayout from '@/layouts/app-layout';
@@ -16,6 +17,9 @@ interface EventTracker {
     name: string;
     location: string;
     status: string;
+    banner?: string | null;
+    is_highlighted?: boolean;
+    preset?: 'solo' | 'community' | 'group';
     end_date: string | null;
     participants: number;
     target_km: number;
@@ -23,6 +27,12 @@ interface EventTracker {
     remaining_km: number;
     percentage: number;
 }
+
+const PRESET_LABEL: Record<string, string> = {
+    solo: 'Solo Run',
+    community: 'Community Run',
+    group: 'Group Run',
+};
 
 interface Stats {
     total_users: number;
@@ -173,11 +183,29 @@ export default function Dashboard({
                             </p>
                         </div>
                     ) : (
-                        <div className="grid gap-6 lg:grid-cols-2">
-                            {eventTrackers.map((event) => (
-                                <TrackerCard key={event.id} event={event} />
-                            ))}
-                        </div>
+                        (() => {
+                            const spot = eventTrackers.find(
+                                (e) => e.is_highlighted,
+                            );
+                            const rest = spot
+                                ? eventTrackers.filter((e) => e.id !== spot.id)
+                                : eventTrackers;
+                            return (
+                                <div className="space-y-6">
+                                    {spot && <SpotlightTracker event={spot} />}
+                                    {rest.length > 0 && (
+                                        <div className="grid gap-6 lg:grid-cols-2">
+                                            {rest.map((event) => (
+                                                <TrackerCard
+                                                    key={event.id}
+                                                    event={event}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()
                     )}
                 </section>
 
@@ -263,6 +291,91 @@ function StatCard({
                 </div>
             </div>
         </div>
+    );
+}
+
+function SpotlightTracker({ event }: { event: EventTracker }) {
+    return (
+        <Link
+            href={`/events/${event.id}/board`}
+            style={{
+                boxShadow:
+                    '0 0 0 1.5px rgba(166,226,18,.5), 0 0 45px rgba(166,226,18,.28), 0 0 90px rgba(166,226,18,.12)',
+            }}
+            className="group relative block overflow-hidden rounded-3xl border border-lime/50 bg-[linear-gradient(145deg,#12150d,#090b08)] text-white transition"
+        >
+            <div
+                aria-hidden
+                className="pointer-events-none absolute -top-1/3 left-1/2 h-[160%] w-[55%] -translate-x-1/2 animate-[pulse2_3s_ease-in-out_infinite]"
+                style={{
+                    background:
+                        'radial-gradient(closest-side, rgba(166,226,18,.2), transparent 70%)',
+                }}
+            />
+            {event.banner && (
+                <img
+                    src={`/storage/${event.banner}`}
+                    alt={event.name}
+                    className="absolute inset-0 h-full w-full object-cover opacity-25"
+                />
+            )}
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,11,8,.45),rgba(9,11,8,.9))]" />
+
+            <div className="relative flex flex-col gap-6 p-7 md:flex-row md:items-center md:justify-between">
+                <div className="max-w-md">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                        {event.preset && (
+                            <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-lime">
+                                {PRESET_LABEL[event.preset] ?? event.preset}
+                            </span>
+                        )}
+                        <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-bold uppercase text-[#cdd3c3]">
+                            {event.status}
+                        </span>
+                    </div>
+                    <h3 className="font-display text-4xl font-black italic uppercase leading-[.95] text-white">
+                        {event.name}
+                    </h3>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-4 text-sm text-[#cdd3c3]">
+                        <span className="inline-flex items-center gap-1.5">
+                            <MapPin size={14} />
+                            {event.location}
+                        </span>
+                        <span>{event.participants} runners</span>
+                        <span>Ends {event.end_date}</span>
+                    </div>
+                    <span className="mt-4 inline-flex items-center gap-2 rounded-xl bg-lime px-5 py-2.5 text-sm font-bold text-[#12150d] transition group-hover:brightness-95">
+                        <BarChart3 size={15} />
+                        View Live Board
+                    </span>
+                </div>
+
+                <div className="w-full md:max-w-xs">
+                    <div className="flex items-end justify-between">
+                        <span className="text-sm font-semibold text-[#8c9882]">
+                            Goal completion
+                        </span>
+                        <span className="font-display text-5xl font-black italic text-lime">
+                            {event.percentage}%
+                        </span>
+                    </div>
+                    <div className="mt-3 h-4 w-full overflow-hidden rounded-full bg-white/10">
+                        <div
+                            className="h-full rounded-full bg-[linear-gradient(90deg,#7fb000,#A6E212)]"
+                            style={{ width: `${event.percentage}%` }}
+                        />
+                    </div>
+                    <div className="mt-2 flex justify-between text-sm">
+                        <span className="font-semibold text-white">
+                            {event.completed_km.toLocaleString()} km
+                        </span>
+                        <span className="text-[#8c9882]">
+                            {event.remaining_km.toLocaleString()} km to goal
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </Link>
     );
 }
 

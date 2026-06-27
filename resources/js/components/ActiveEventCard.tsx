@@ -1,30 +1,51 @@
+import { Link } from '@inertiajs/react';
 import { Check } from '@/lib/icons';
+import { BarChart3 } from 'lucide-react';
 import ProgressMeter from './ProgressMeter';
 
-interface ActiveEventCardProps {
-    registration: {
-        event_name: string;
-        category_name: string; // e.g. "300 KM"
-        bib_number: string;
-        distance_done: number;
-        target_km: number;
-        activity_count: number;
-        last_activity_at: string; // pre-formatted, e.g. "Jun 24"
-        ranking_enabled: boolean;
-        rank?: number;
-        /** Derived server-side or below; either works. */
-        status?: string;
-    };
+interface Registration {
+    event_id?: number | string;
+    event_name: string;
+    category_name: string;
+    bib_number: string;
+    distance_done: number;
+    target_km: number;
+    activity_count: number;
+    last_activity_at: string;
+    ranking_enabled: boolean;
+    rank?: number;
+    status?: string;
+    banner?: string | null;
+    is_highlighted?: boolean;
+    preset?: 'solo' | 'community' | 'group';
+}
+
+const PRESET_LABEL: Record<string, string> = {
+    solo: 'Solo Run',
+    community: 'Community Run',
+    group: 'Group Run',
+};
+
+function PresetTag({ preset }: { preset?: string }) {
+    if (!preset) return null;
+    return (
+        <span className="inline-flex rounded-full bg-[#eef7d8] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#5f8c00]">
+            {PRESET_LABEL[preset] ?? preset}
+        </span>
+    );
 }
 
 /**
- * Active event card for the Dashboard (HANDOFF.md §4). Shows category chip,
- * optional RANKED badge, animated progress, and a dashed-rule footer with
- * bib / activities / remaining / last activity.
+ * Active event card for the Dashboard. Clickable → the event's live board.
+ * The highlighted event renders as a full-width "spotlight".
  */
 export default function ActiveEventCard({
     registration: r,
-}: ActiveEventCardProps) {
+    spotlight = false,
+}: {
+    registration: Registration;
+    spotlight?: boolean;
+}) {
     const pct = Math.min(
         100,
         Math.round((r.distance_done / r.target_km) * 100),
@@ -33,14 +54,90 @@ export default function ActiveEventCard({
     const completed =
         r.status === 'completed' || r.distance_done >= r.target_km;
 
+    const href = r.event_id ? `/events/${r.event_id}/board` : undefined;
+    const Wrapper: any = href ? Link : 'article';
+    const wrapperProps = href ? { href } : {};
+
+    if (spotlight) {
+        return (
+            <Wrapper
+                {...wrapperProps}
+                style={{
+                    boxShadow:
+                        '0 0 0 1.5px rgba(166,226,18,.5), 0 0 45px rgba(166,226,18,.28), 0 0 90px rgba(166,226,18,.12)',
+                }}
+                className="group relative col-span-full block overflow-hidden rounded-[20px] border border-lime/50 bg-[linear-gradient(145deg,#12150d,#090b08)] text-white transition"
+            >
+                {/* spotlight beam */}
+                <div
+                    aria-hidden
+                    className="pointer-events-none absolute -top-1/3 left-1/2 h-[160%] w-[55%] -translate-x-1/2 animate-[pulse2_3s_ease-in-out_infinite]"
+                    style={{
+                        background:
+                            'radial-gradient(closest-side, rgba(166,226,18,.22), transparent 70%)',
+                    }}
+                />
+                {r.banner && (
+                    <img
+                        src={`/storage/${r.banner}`}
+                        alt={r.event_name}
+                        className="absolute inset-0 h-full w-full object-cover opacity-25"
+                    />
+                )}
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,11,8,.45),rgba(9,11,8,.9))]" />
+                <div className="relative flex flex-col gap-5 p-6 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                            <PresetTag preset={r.preset} />
+                            <span className="rounded-[7px] bg-white/10 px-2.5 py-0.5 font-display text-sm font-bold italic text-lime">
+                                {r.category_name}
+                            </span>
+                        </div>
+                        <h3 className="font-display text-3xl font-black italic uppercase leading-tight text-white">
+                            {r.event_name}
+                        </h3>
+                        <div className="mt-2 text-sm text-[#cdd3c3]">
+                            Bib {r.bib_number} · {r.activity_count} activities ·{' '}
+                            {remaining} KM to goal
+                        </div>
+                        <span className="mt-4 inline-flex items-center gap-2 rounded-xl bg-lime px-5 py-2.5 text-sm font-bold text-[#12150d] transition group-hover:brightness-95">
+                            <BarChart3 size={15} />
+                            View Live Board
+                        </span>
+                    </div>
+
+                    <div className="w-full max-w-xs">
+                        <div className="mb-2 flex items-end justify-between">
+                            <span className="font-display text-4xl font-black italic text-white">
+                                {r.distance_done}
+                                <span className="text-base font-semibold text-[#8c9882]">
+                                    {' '}
+                                    / {r.target_km} KM
+                                </span>
+                            </span>
+                            <span className="font-display text-2xl font-bold italic text-lime">
+                                {pct}%
+                            </span>
+                        </div>
+                        <ProgressMeter pct={pct} onDark />
+                    </div>
+                </div>
+            </Wrapper>
+        );
+    }
+
     return (
-        <article className="relative overflow-hidden rounded-[18px] border border-line bg-card p-[22px] shadow-[0_1px_2px_rgba(20,30,10,.05)]">
+        <Wrapper
+            {...wrapperProps}
+            className="group relative block w-[88%] shrink-0 snap-center overflow-hidden rounded-[18px] border border-line bg-card p-[22px] shadow-[0_1px_2px_rgba(20,30,10,.05)] transition hover:border-lime sm:w-[60%] md:w-full"
+        >
             <div className="flex items-start justify-between gap-3">
                 <div>
-                    <div className="mb-1.5 flex items-center gap-2">
+                    <div className="mb-1.5 flex flex-wrap items-center gap-2">
                         <span className="rounded-[7px] bg-ink-900 px-2.5 py-[3px] font-display text-sm font-bold tracking-[.02em] text-lime italic">
                             {r.category_name}
                         </span>
+                        <PresetTag preset={r.preset} />
                         {r.ranking_enabled && r.rank != null ? (
                             <span className="rounded-full border border-[#d9eaa8] bg-[#f1f7e2] px-2 py-[3px] text-[10px] font-bold tracking-[.08em] text-lime-deep">
                                 RANKED #{r.rank}
@@ -85,7 +182,7 @@ export default function ActiveEventCard({
                     alignEnd
                 />
             </div>
-        </article>
+        </Wrapper>
     );
 }
 

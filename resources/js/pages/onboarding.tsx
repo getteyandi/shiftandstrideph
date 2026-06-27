@@ -9,6 +9,7 @@ interface Props {
         email: string;
     };
     genders: string[];
+    islands: string[];
 }
 
 interface FormData {
@@ -16,11 +17,13 @@ interface FormData {
     gender: string;
     province: string;
     city: string;
+    island: string;
+    address: string;
     profile_photo: File | null;
     [key: string]: string | File | null;
 }
 
-export default function Onboarding({ user, genders }: Props) {
+export default function Onboarding({ user, genders, islands }: Props) {
     const [preview, setPreview] = useState<string | null>(null);
 
     const { data, setData, post, processing, errors } = useForm<FormData>({
@@ -28,6 +31,8 @@ export default function Onboarding({ user, genders }: Props) {
         gender: '',
         province: '',
         city: '',
+        island: '',
+        address: '',
         profile_photo: null,
     });
 
@@ -196,6 +201,45 @@ export default function Onboarding({ user, genders }: Props) {
                                 />
                             </Field>
                         </div>
+
+                        <Field
+                            label="Shipping Address"
+                            error={errors.address}
+                        >
+                            <textarea
+                                rows={2}
+                                value={data.address}
+                                placeholder="House no., street, barangay, city, ZIP — where prizes/merch ship to"
+                                onChange={(e) =>
+                                    setData('address', e.target.value)
+                                }
+                                className="w-full resize-y rounded-xl border border-line bg-white px-4 py-3 outline-none transition focus:border-lime focus:ring-4 focus:ring-lime/10"
+                            />
+                        </Field>
+
+                        <Field label="Island Group" error={errors.island}>
+                            <div className="grid grid-cols-3 gap-2">
+                                {islands.map((isl) => {
+                                    const on = data.island === isl;
+                                    return (
+                                        <button
+                                            key={isl}
+                                            type="button"
+                                            onClick={() =>
+                                                setData('island', isl)
+                                            }
+                                            className={`rounded-xl border px-3 py-3 text-sm font-semibold transition ${
+                                                on
+                                                    ? 'border-lime bg-[#F7FCEB] text-ink'
+                                                    : 'border-line bg-white text-muted hover:border-lime'
+                                            }`}
+                                        >
+                                            {isl}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </Field>
 
                         <button
                             type="submit"

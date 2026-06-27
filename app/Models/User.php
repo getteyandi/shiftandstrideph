@@ -69,6 +69,8 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
     'gender',
     'province',
     'city',
+    'island',
+    'address',
     'role',
     'password',
 ])]

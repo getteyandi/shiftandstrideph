@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\EventCategory;
 use App\Models\Registration;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -24,6 +25,7 @@ class DashboardController extends Controller
 
         $registrations = Registration::with([
             'eventCategory.event',
+            'group.registrations.eventCategory',
         ])
             ->where('user_id', $user->id)
             ->whereIn('status', ['approved', 'completed'])
@@ -41,6 +43,31 @@ class DashboardController extends Controller
 
         $rankIndex = $totals->search($user->id);
         $rank = $rankIndex === false ? null : $rankIndex + 1;
+
+        // Best single-event distance and best per-event rank (top 20 only).
+        $bestKm = (float) $registrations->max('completed_km');
+
+        $bestRank = null;
+        foreach ($registrations->pluck('eventCategory.event')->filter()->unique('id') as $event) {
+            $catIds = EventCategory::where('event_id', $event->id)->pluck('id');
+
+            $ranked = Registration::query()
+                ->whereIn('event_category_id', $catIds)
+                ->whereIn('status', ['approved', 'completed'])
+                ->orderByDesc('completed_km')
+                ->pluck('user_id')
+                ->values();
+
+            $pos = $ranked->search($user->id);
+            if ($pos !== false) {
+                $position = $pos + 1;
+                if ($position <= 20) {
+                    $bestRank = $bestRank === null
+                        ? $position
+                        : min($bestRank, $position);
+                }
+            }
+        }
 
         $pendingRegistrations = Registration::with([
             'eventCategory.event',
@@ -75,6 +102,10 @@ class DashboardController extends Controller
 
                 'rank' => $rank,
 
+                'best_km' => round($bestKm, 2),
+
+                'best_rank' => $bestRank,
+
                 'total_distance' => $registrations->sum('completed_km'),
 
                 'events_completed' => $registrations
@@ -107,19 +138,48 @@ class DashboardController extends Controller
 
             'activeRegistrations' => $registrations->map(function ($registration) {
 
+                $event = $registration->eventCategory->event;
+
+                // Group/duo events share ONE goal (the category distance) and
+                // mirror the live board: members combine their distance to
+                // finish that single goal together.
+                $group = $registration->group;
+                if ($event->preset === 'group' && $group) {
+                    $active = $group->registrations
+                        ->whereIn('status', ['approved', 'completed']);
+                    $targetKm = round((float) $active->max(
+                        fn ($r) => (float) ($r->eventCategory?->target_km ?? 0)
+                    ), 2);
+                    $distanceDone = round(
+                        min((float) $active->sum('completed_km'), $targetKm),
+                        2,
+                    );
+                } else {
+                    $distanceDone = (float) $registration->completed_km;
+                    $targetKm = (float) $registration->eventCategory->target_km;
+                }
+
                 return [
 
                     'id' => $registration->id,
 
-                    'event_name' => $registration->eventCategory->event->name,
+                    'event_id' => $event->id,
+
+                    'event_name' => $event->name,
+
+                    'banner' => $event->banner,
+
+                    'is_highlighted' => (bool) $event->is_highlighted,
+
+                    'preset' => $event->preset,
 
                     'category_name' => $registration->eventCategory->name,
 
                     'bib_number' => $registration->bib_number,
 
-                    'distance_done' => $registration->completed_km,
+                    'distance_done' => $distanceDone,
 
-                    'target_km' => $registration->eventCategory->target_km,
+                    'target_km' => $targetKm,
 
                     'activity_count' => $registration->activity_count,
 

@@ -19,6 +19,7 @@ interface Runner {
 }
 interface Registration {
     id: number | string;
+    event_id?: number | string;
     event_name: string;
     category_name: string;
     bib_number: string;
@@ -29,6 +30,9 @@ interface Registration {
     ranking_enabled: boolean;
     rank?: number;
     status?: string;
+    banner?: string | null;
+    is_highlighted?: boolean;
+    preset?: 'solo' | 'community' | 'group';
 }
 interface TopContribution {
     event_name: string;
@@ -81,11 +85,39 @@ export default function Dashboard({
                                 </span>
                             }
                         />
-                        <div className="grid grid-cols-[repeat(auto-fit,minmax(330px,1fr))] gap-[18px]">
-                            {activeRegistrations.map((r) => (
-                                <ActiveEventCard key={r.id} registration={r} />
-                            ))}
-                        </div>
+
+                        {(() => {
+                            const spotlight = activeRegistrations.find(
+                                (r) => r.is_highlighted,
+                            );
+                            const others = spotlight
+                                ? activeRegistrations.filter(
+                                      (r) => r.id !== spotlight.id,
+                                  )
+                                : activeRegistrations;
+
+                            return (
+                                <div className="space-y-[18px]">
+                                    {spotlight && (
+                                        <ActiveEventCard
+                                            registration={spotlight}
+                                            spotlight
+                                        />
+                                    )}
+
+                                    {others.length > 0 && (
+                                        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-[repeat(auto-fit,minmax(330px,1fr))] md:gap-[18px] md:overflow-visible">
+                                            {others.map((r) => (
+                                                <ActiveEventCard
+                                                    key={r.id}
+                                                    registration={r}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
                     </div>
 
                     {/* Pending approval — below active events */}
@@ -99,7 +131,7 @@ export default function Dashboard({
                                     </span>
                                 }
                             />
-                            <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-[18px]">
+                            <div className="grid grid-cols-1 gap-[18px] md:grid-cols-2">
                                 {pendingRegistrations.map((p) => (
                                     <div
                                         key={p.id}

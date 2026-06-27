@@ -16,7 +16,8 @@ class OnboardingController extends Controller
         if (
             $user->role === 'admin' ||
             ($user->birthday && $user->gender && $user->province
-                && $user->city && $user->profile_photo)
+                && $user->city && $user->island && $user->address
+                && $user->profile_photo)
         ) {
             return redirect()->route('dashboard');
         }
@@ -28,6 +29,7 @@ class OnboardingController extends Controller
                 'email' => $user->email,
             ],
             'genders' => ['Male', 'Female', 'Prefer not to say'],
+            'islands' => ['Luzon', 'Visayas', 'Mindanao'],
         ]);
     }
 
@@ -38,6 +40,8 @@ class OnboardingController extends Controller
             'gender' => ['required', 'in:Male,Female,Prefer not to say'],
             'province' => ['required', 'string', 'max:255'],
             'city' => ['required', 'string', 'max:255'],
+            'island' => ['required', 'in:Luzon,Visayas,Mindanao'],
+            'address' => ['required', 'string', 'max:500'],
             'profile_photo' => ['required', 'image', 'max:5120'],
         ]);
 
