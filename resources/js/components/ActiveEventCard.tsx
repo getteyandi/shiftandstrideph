@@ -1,9 +1,10 @@
 import { Link } from '@inertiajs/react';
 import { Check } from '@/lib/icons';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, Award } from 'lucide-react';
 import ProgressMeter from './ProgressMeter';
 
 interface Registration {
+    id?: number | string;
     event_id?: number | string;
     event_name: string;
     category_name: string;
@@ -13,12 +14,18 @@ interface Registration {
     activity_count: number;
     last_activity_at: string;
     ranking_enabled: boolean;
-    rank?: number;
+    rank?: number | null;
     status?: string;
     banner?: string | null;
     is_highlighted?: boolean;
     preset?: 'solo' | 'community' | 'group';
 }
+
+const STATUS_PILL: Record<string, string> = {
+    pending: 'bg-[#fff3d6] text-[#b07d00]',
+    rejected: 'bg-[#fde4e1] text-[#c0392b]',
+    approved: 'bg-[#eef7d8] text-[#5f8c00]',
+};
 
 const PRESET_LABEL: Record<string, string> = {
     solo: 'Solo Run',
@@ -57,6 +64,20 @@ export default function ActiveEventCard({
     const href = r.event_id ? `/events/${r.event_id}/board` : undefined;
     const Wrapper: any = href ? Link : 'article';
     const wrapperProps = href ? { href } : {};
+
+    const downloadCert = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!r.id) return;
+        // Trigger the download via a real anchor so it never collides with the
+        // card's own navigation link.
+        const a = document.createElement('a');
+        a.href = `/certificates/${r.id}/download`;
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    };
 
     if (spotlight) {
         return (
@@ -100,10 +121,22 @@ export default function ActiveEventCard({
                             Bib {r.bib_number} · {r.activity_count} activities ·{' '}
                             {remaining} KM to goal
                         </div>
-                        <span className="mt-4 inline-flex items-center gap-2 rounded-xl bg-lime px-5 py-2.5 text-sm font-bold text-[#12150d] transition group-hover:brightness-95">
-                            <BarChart3 size={15} />
-                            View Live Board
-                        </span>
+                        <div className="mt-4 flex flex-wrap items-center gap-2.5">
+                            <span className="inline-flex items-center gap-2 rounded-xl bg-lime px-5 py-2.5 text-sm font-bold text-[#12150d] transition group-hover:brightness-95">
+                                <BarChart3 size={15} />
+                                View Live Board
+                            </span>
+                            {completed && r.id ? (
+                                <button
+                                    type="button"
+                                    onClick={downloadCert}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-lime/50 bg-white/10 px-5 py-2.5 text-sm font-bold text-lime transition hover:bg-lime hover:text-[#12150d]"
+                                >
+                                    <Award size={15} />
+                                    Certificate
+                                </button>
+                            ) : null}
+                        </div>
                     </div>
 
                     <div className="w-full max-w-xs">
@@ -152,6 +185,14 @@ export default function ActiveEventCard({
                     <span className="inline-flex shrink-0 items-center gap-[5px] rounded-full bg-lime px-2.5 py-[5px] text-[11px] font-extrabold tracking-[.04em] text-ink-900">
                         <Check size={12} strokeWidth={3} /> COMPLETED
                     </span>
+                ) : r.status && r.status !== 'approved' ? (
+                    <span
+                        className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-[5px] text-[11px] font-extrabold uppercase tracking-[.04em] ${
+                            STATUS_PILL[r.status] ?? STATUS_PILL.pending
+                        }`}
+                    >
+                        {r.status}
+                    </span>
                 ) : null}
             </div>
 
@@ -182,6 +223,17 @@ export default function ActiveEventCard({
                     alignEnd
                 />
             </div>
+
+            {completed && r.id ? (
+                <button
+                    type="button"
+                    onClick={downloadCert}
+                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-5 py-2.5 text-sm font-bold text-lime transition hover:bg-lime hover:text-ink"
+                >
+                    <Award size={16} />
+                    Download certificate
+                </button>
+            ) : null}
         </Wrapper>
     );
 }

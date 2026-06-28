@@ -17,6 +17,9 @@ createInertiaApp({
             // Hall of Fame ships its own full-screen dark layout.
             case name === 'leaderboards/Index':
                 return null;
+            // Public certificate verification — standalone, no app shell.
+            case name === 'certificates/Verify':
+                return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
             case name.startsWith('settings/'):

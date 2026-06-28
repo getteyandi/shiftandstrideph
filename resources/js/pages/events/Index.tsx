@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import AppLayout from '@/layouts/app-layout';
 import SectionHeader from '@/components/SectionHeader';
 import Pagination, { type PaginationLink } from '@/components/Pagination';
+import ActiveEventCard from '@/components/ActiveEventCard';
 import {
     Calendar,
     History,
@@ -55,11 +56,19 @@ function PresetTag({
 
 interface JoinedEvent {
     id: number;
+    event_id?: number;
     event_name: string;
+    banner?: string | null;
+    is_highlighted?: boolean;
+    preset?: 'solo' | 'community' | 'group';
     category_name: string;
-    target_km: number;
-    completed_km: number;
     bib_number: string;
+    distance_done: number;
+    target_km: number;
+    activity_count: number;
+    last_activity_at: string;
+    ranking_enabled: boolean;
+    rank?: number | null;
     status: string;
     joined_at: string;
 }
@@ -89,20 +98,6 @@ const FILTERS = [
 
 const isHistory = (status: string) =>
     ['closed', 'completed'].includes(status.toLowerCase());
-
-const joinStatusPill = (status: string) => {
-    switch (status) {
-        case 'approved':
-        case 'completed':
-            return 'bg-[#eef7d8] text-[#5f8c00]';
-        case 'pending':
-            return 'bg-[#fff3d6] text-[#b07d00]';
-        case 'rejected':
-            return 'bg-[#fde4e1] text-[#c0392b]';
-        default:
-            return 'bg-[#E4E8DD] text-[#5A6152]';
-    }
-};
 
 export default function EventsIndex({
     highlighted,
@@ -203,59 +198,10 @@ export default function EventsIndex({
                                 </span>
                             }
                         />
-                        <div className="overflow-hidden rounded-[20px] border border-line bg-card">
-                            {joinedEvents.data.map((j) => {
-                                const pct = j.target_km
-                                    ? Math.min(
-                                          100,
-                                          Math.round(
-                                              (j.completed_km / j.target_km) *
-                                                  100,
-                                          ),
-                                      )
-                                    : 0;
-                                return (
-                                    <div
-                                        key={j.id}
-                                        className="flex flex-wrap items-center gap-4 border-b border-line px-5 py-4 last:border-b-0"
-                                    >
-                                        <div className="min-w-[180px] flex-1">
-                                            <div className="text-[15px] font-bold text-ink">
-                                                {j.event_name}
-                                            </div>
-                                            <div className="text-[12.5px] text-muted-2">
-                                                {j.category_name} · Bib{' '}
-                                                {j.bib_number} · Joined{' '}
-                                                {j.joined_at}
-                                            </div>
-                                        </div>
-                                        <div className="min-w-[140px]">
-                                            <div className="mb-1 flex justify-between text-[11px] font-semibold text-muted">
-                                                <span>
-                                                    {j.completed_km}/
-                                                    {j.target_km} KM
-                                                </span>
-                                                <span>{pct}%</span>
-                                            </div>
-                                            <div className="h-2 w-full overflow-hidden rounded-full bg-[#EEF1E8]">
-                                                <div
-                                                    className="h-full rounded-full bg-lime"
-                                                    style={{
-                                                        width: `${pct}%`,
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                        <span
-                                            className={`rounded-full px-2.5 py-[5px] text-[11px] font-extrabold uppercase tracking-[.05em] ${joinStatusPill(
-                                                j.status,
-                                            )}`}
-                                        >
-                                            {j.status}
-                                        </span>
-                                    </div>
-                                );
-                            })}
+                        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-2 md:gap-[18px] md:overflow-visible md:pb-0 xl:grid-cols-3">
+                            {joinedEvents.data.map((j) => (
+                                <ActiveEventCard key={j.id} registration={j} />
+                            ))}
                         </div>
                         <Pagination paginator={joinedEvents} />
                     </div>

@@ -13,6 +13,7 @@ import {
     X,
     Mail,
     ExternalLink,
+    Award,
 } from 'lucide-react';
 import EventCardLarge from '@/components/EventCardLarge';
 import {
@@ -297,13 +298,23 @@ export default function Show({
                                     {myRegistration.status}
                                 </div>
                             </div>
-                            <button
-                                onClick={undo}
-                                className="inline-flex items-center gap-2 rounded-xl border border-red-300 px-5 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-50"
-                            >
-                                <Undo2 size={16} />
-                                Undo
-                            </button>
+                            {myRegistration.status === 'completed' ? (
+                                <a
+                                    href={`/certificates/${myRegistration.id}/download`}
+                                    className="inline-flex items-center gap-2 rounded-xl bg-ink px-5 py-2.5 text-sm font-bold text-lime transition hover:bg-lime hover:text-ink"
+                                >
+                                    <Award size={16} />
+                                    Download certificate
+                                </a>
+                            ) : (
+                                <button
+                                    onClick={undo}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-red-300 px-5 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-50"
+                                >
+                                    <Undo2 size={16} />
+                                    Undo
+                                </button>
+                            )}
                         </div>
                     </section>
                 ) : (

@@ -42,6 +42,26 @@ class FullPipelineSeeder extends Seeder
         $this->seedShipments($users);
         $this->seedGroups($users, $events);
         $this->seedNotifications($users);
+        $this->seedCertificateTemplate();
+    }
+
+    /* ------------------------------------------------ certificate template */
+
+    /** The global default finisher-certificate design. */
+    private function seedCertificateTemplate(): void
+    {
+        \App\Models\CertificateTemplate::create([
+            'event_id' => null,
+            'title' => 'Certificate of Completion',
+            'body' => 'has successfully completed the {{category}} category of '
+                . 'the {{event_name}} virtual run on {{completed_date}}, '
+                . 'finishing a distance of {{distance}}.',
+            'accent_color' => '#a6e212',
+            'orientation' => 'landscape',
+            'signatory_name' => 'Race Director',
+            'signatory_title' => 'Shift & Stride PH',
+            'is_active' => true,
+        ]);
     }
 
     /* ------------------------------------------------------- notifications */
@@ -183,6 +203,8 @@ class FullPipelineSeeder extends Seeder
         Schema::disableForeignKeyConstraints();
         foreach (
             [
+                'certificates',
+                'certificate_templates',
                 'notifications',
                 'shipments',
                 'registration_submission',

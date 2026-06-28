@@ -8,6 +8,8 @@ use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\EventCategoryController;
 use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\AdminGroupController;
+use App\Http\Controllers\Admin\AdminCertificateTemplateController;
+use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventBoardController;
 use App\Http\Controllers\GroupController;
@@ -22,6 +24,12 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::inertia('/', 'welcome')->name('home');
+
+// Public certificate authenticity check.
+Route::get(
+    '/verify/{serial}',
+    [CertificateController::class, 'verify']
+)->name('certificates.verify');
 
 /*
 |--------------------------------------------------------------------------
@@ -144,6 +152,27 @@ Route::middleware(['auth', 'admin'])->group(function () {
         '/admin/groups/{group}/deny',
         [AdminGroupController::class, 'deny']
     )->name('admin.groups.deny');
+
+    // Certificate design (per event)
+    Route::get(
+        '/admin/events/{event}/certificate',
+        [AdminCertificateTemplateController::class, 'edit']
+    )->name('admin.events.certificate.edit');
+
+    Route::post(
+        '/admin/events/{event}/certificate',
+        [AdminCertificateTemplateController::class, 'update']
+    )->name('admin.events.certificate.update');
+
+    Route::get(
+        '/admin/events/{event}/certificate/preview',
+        [AdminCertificateTemplateController::class, 'preview']
+    )->name('admin.events.certificate.preview');
+
+    Route::get(
+        '/admin/events/{event}/certificate/test',
+        [AdminCertificateTemplateController::class, 'test']
+    )->name('admin.events.certificate.test');
 });
 
 /*
@@ -264,6 +293,11 @@ Route::middleware(['auth', 'verified', 'profile.complete'])->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->group(function () {
+    Route::get(
+        '/certificates/{registration}/download',
+        [CertificateController::class, 'download']
+    )->name('certificates.download');
+
     Route::get(
         '/notifications',
         [NotificationController::class, 'index']

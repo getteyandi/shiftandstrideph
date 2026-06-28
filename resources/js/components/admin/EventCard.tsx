@@ -8,6 +8,7 @@ import {
     Eye,
     Lock,
     Star,
+    Award,
 } from 'lucide-react';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
@@ -300,13 +301,23 @@ export default function EventCard({ event }: Props) {
                     </div>
                 )}
 
-                <Link
-                    href={`/events/${event.id}/board`}
-                    className="flex items-center justify-center gap-2 rounded-xl border border-[#d9ded2] py-2.5 text-sm font-semibold text-[#5A6152] transition hover:border-lime hover:text-lime-deep"
-                >
-                    <Eye size={15} />
-                    Live Board
-                </Link>
+                <div className="flex gap-2">
+                    <Link
+                        href={`/events/${event.id}/board`}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#d9ded2] py-2.5 text-sm font-semibold text-[#5A6152] transition hover:border-lime hover:text-lime-deep"
+                    >
+                        <Eye size={15} />
+                        Live Board
+                    </Link>
+
+                    <Link
+                        href={`/admin/events/${event.id}/certificate`}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#d9ded2] py-2.5 text-sm font-semibold text-[#5A6152] transition hover:border-lime hover:text-lime-deep"
+                    >
+                        <Award size={15} />
+                        Certificate
+                    </Link>
+                </div>
 
             </div>
 

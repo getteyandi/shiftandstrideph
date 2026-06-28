@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Observers\RegistrationObserver;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -56,8 +59,19 @@ use Illuminate\Support\Carbon;
     'approved_at',
     'completed_at',
 ])]
+#[ObservedBy([RegistrationObserver::class])]
 class Registration extends Model
 {
+    /**
+     * Issued finisher certificate (one per completed registration).
+     *
+     * @return HasOne<Certificate, $this>
+     */
+    public function certificate(): HasOne
+    {
+        return $this->hasOne(Certificate::class);
+    }
+
     /**
      * Registration owner.
      *

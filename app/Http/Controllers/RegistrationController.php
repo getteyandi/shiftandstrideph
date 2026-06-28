@@ -70,22 +70,55 @@ class RegistrationController extends Controller
             ->withQueryString()
             ->through($map);
 
-        // The runner's own join history across every event/category (paginated).
-        $joinedEvents = Registration::with(['eventCategory.event'])
+        // The runner's own join history rendered with the dashboard event cards.
+        $joinedEvents = Registration::with([
+            'eventCategory.event',
+            'group.registrations.eventCategory',
+        ])
             ->where('user_id', $user->id)
             ->latest()
-            ->paginate(5, ['*'], 'joined')
+            ->paginate(6, ['*'], 'joined')
             ->withQueryString()
-            ->through(fn (Registration $registration) => [
-                'id' => $registration->id,
-                'event_name' => $registration->eventCategory?->event?->name,
-                'category_name' => $registration->eventCategory?->name,
-                'target_km' => (float) ($registration->eventCategory?->target_km ?? 0),
-                'completed_km' => (float) $registration->completed_km,
-                'bib_number' => $registration->bib_number,
-                'status' => $registration->status,
-                'joined_at' => $registration->created_at?->format('M j, Y'),
-            ]);
+            ->through(function (Registration $registration) {
+                $event = $registration->eventCategory?->event;
+                $group = $registration->group;
+
+                // Group/duo events share one combined goal (matches the board).
+                if ($event?->preset === 'group' && $group) {
+                    $active = $group->registrations
+                        ->whereIn('status', ['approved', 'completed']);
+                    $targetKm = round((float) $active->max(
+                        fn ($r) => (float) ($r->eventCategory?->target_km ?? 0)
+                    ), 2);
+                    $distanceDone = round(
+                        min((float) $active->sum('completed_km'), $targetKm),
+                        2,
+                    );
+                } else {
+                    $distanceDone = (float) $registration->completed_km;
+                    $targetKm = (float) ($registration->eventCategory?->target_km ?? 0);
+                }
+
+                return [
+                    'id' => $registration->id,
+                    'event_id' => $event?->id,
+                    'event_name' => $event?->name,
+                    'banner' => $event?->banner,
+                    'is_highlighted' => (bool) $event?->is_highlighted,
+                    'preset' => $event?->preset,
+                    'category_name' => $registration->eventCategory?->name,
+                    'bib_number' => $registration->bib_number,
+                    'distance_done' => $distanceDone,
+                    'target_km' => $targetKm,
+                    'activity_count' => $registration->activity_count,
+                    'last_activity_at' => optional($registration->last_activity_at)
+                        ?->format('M d') ?? '—',
+                    'ranking_enabled' => (bool) $registration->eventCategory?->ranking_enabled,
+                    'rank' => null,
+                    'status' => $registration->status,
+                    'joined_at' => $registration->created_at?->format('M j, Y'),
+                ];
+            });
 
         return Inertia::render('events/Index', [
             'highlighted' => $highlighted,
