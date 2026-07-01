@@ -45,6 +45,8 @@ class EventCategoryController extends Controller
             'ranking_enabled' => ['required', 'boolean'],
         ]);
 
+        $validated['target_km'] = round((float) $validated['target_km'], 2);
+
         EventCategory::create($validated);
 
         $this->toast('Category added.');
@@ -73,6 +75,8 @@ class EventCategoryController extends Controller
             'registration_limit' => ['nullable', 'integer', 'min:1'],
             'ranking_enabled' => ['required', 'boolean'],
         ]);
+
+        $validated['target_km'] = round((float) $validated['target_km'], 2);
 
         $eventCategory->update($validated);
 

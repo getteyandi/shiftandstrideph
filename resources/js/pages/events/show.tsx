@@ -134,7 +134,6 @@ export default function Show({
     });
     const [picked, setPicked] = useState(0);
     const [candidate, setCandidate] = useState('');
-    const [acceptCat, setAcceptCat] = useState<Record<number, number>>({});
 
     const join = () => post(`/events/${event.id}/join`);
 
@@ -159,17 +158,9 @@ export default function Show({
     const cancelInvite = (id: number) =>
         router.delete(`/group-invitations/${id}`, { preserveScroll: true });
 
-    // Default to the first category so single-category events accept in one tap.
-    const chosenCat = (id: number) =>
-        acceptCat[id] ?? event.categories[0]?.id ?? 0;
-
-    const accept = (id: number) => {
-        const categoryId = chosenCat(id);
-        if (!categoryId) return;
-        router.post(`/group-invitations/${id}/accept`, {
-            event_category_id: categoryId,
-        });
-    };
+    // Accepting just joins the captain's team & category — no category prompt.
+    const accept = (id: number) =>
+        router.post(`/group-invitations/${id}/accept`, {});
 
     const decline = (id: number) =>
         router.post(
@@ -235,38 +226,13 @@ export default function Show({
                                         {inv.type}
                                     </span>
                                 </div>
-                                <div className="mt-3 text-sm font-semibold text-[#4b5340]">
-                                    Pick your category to accept:
-                                </div>
-                                <div className="mt-2 flex flex-wrap gap-2">
-                                    {event.categories.map((c) => {
-                                        const on = chosenCat(inv.id) === c.id;
-                                        return (
-                                            <button
-                                                key={c.id}
-                                                type="button"
-                                                onClick={() =>
-                                                    setAcceptCat((m) => ({
-                                                        ...m,
-                                                        [inv.id]: c.id,
-                                                    }))
-                                                }
-                                                className={`rounded-lg border px-3 py-1.5 text-sm font-bold transition ${
-                                                    on
-                                                        ? 'border-lime bg-lime text-ink'
-                                                        : 'border-line bg-white text-muted hover:border-lime'
-                                                }`}
-                                            >
-                                                {c.name}
-                                            </button>
-                                        );
-                                    })}
+                                <div className="mt-2 text-sm text-[#4b5340]">
+                                    Join {inv.captain}'s team for this event.
                                 </div>
                                 <div className="mt-4 flex gap-2">
                                     <button
                                         onClick={() => accept(inv.id)}
-                                        disabled={!chosenCat(inv.id)}
-                                        className="inline-flex items-center gap-1.5 rounded-xl bg-ink px-5 py-2.5 text-sm font-bold text-lime transition hover:bg-lime hover:text-ink disabled:opacity-50"
+                                        className="inline-flex items-center gap-1.5 rounded-xl bg-ink px-5 py-2.5 text-sm font-bold text-lime transition hover:bg-lime hover:text-ink"
                                     >
                                         <Check size={16} />
                                         Accept
@@ -374,7 +340,11 @@ export default function Show({
                                             )}
                                         </div>
                                         <p className="mt-1 text-sm text-muted-2">
-                                            Complete {c.target_km} KM
+                                            Complete{' '}
+                                            {Math.round(
+                                                Number(c.target_km) * 100,
+                                            ) / 100}{' '}
+                                            KM
                                         </p>
                                     </button>
                                 );

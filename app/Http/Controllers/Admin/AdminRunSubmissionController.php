@@ -116,6 +116,13 @@ class AdminRunSubmissionController extends Controller
             }
         }
 
+        // Group/duo events finish together: once the team's combined distance
+        // reaches the shared goal, complete every member so no one can keep
+        // submitting to a finished event (and each member earns a certificate).
+        foreach ($registrations as $registration) {
+            $this->completeTeamIfGoalReached($registration);
+        }
+
         $runSubmission->user->notify(
             new RunApprovedNotification()
         );
@@ -188,16 +195,42 @@ class AdminRunSubmissionController extends Controller
     }
 
     /**
+     * Complete an entire team once its combined distance hits the shared goal.
+     * Updates run per-model so the certificate observer fires for each member.
+     */
+    private function completeTeamIfGoalReached(Registration $registration): void
+    {
+        $registration->loadMissing('group.registrations.eventCategory', 'eventCategory.event');
+        $group = $registration->group;
+
+        if (! $group || $registration->eventCategory?->event?->preset !== 'group') {
+            return;
+        }
+
+        $active = $group->registrations->whereIn('status', ['approved', 'completed']);
+        $goal = (float) $active->max(fn ($r) => (float) ($r->eventCategory?->target_km ?? 0));
+        $done = (float) $active->sum('completed_km');
+
+        if ($goal <= 0 || $done < $goal) {
+            return;
+        }
+
+        foreach ($group->registrations()->where('status', 'approved')->get() as $member) {
+            $member->update(['status' => 'completed', 'completed_at' => now()]);
+        }
+    }
+
+    /**
      * The runner's position on the overall leaderboard (by total approved +
      * completed distance), or null if they haven't logged any distance.
      */
     private function overallRank(int $userId): ?int
     {
-        $order = Registration::query()
-            ->whereIn('status', ['approved', 'completed'])
-            ->selectRaw('user_id, SUM(completed_km) as total')
+        $order = RunSubmission::query()
+            ->where('status', 'approved')
+            ->selectRaw('user_id, SUM(distance) as total')
             ->groupBy('user_id')
-            ->havingRaw('SUM(completed_km) > 0')
+            ->havingRaw('SUM(distance) > 0')
             ->orderByDesc('total')
             ->pluck('user_id')
             ->values();

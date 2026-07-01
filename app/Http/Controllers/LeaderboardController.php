@@ -27,9 +27,12 @@ class LeaderboardController extends Controller
     {
         return User::query()
             ->where('role', 'participant')
-            ->with(['registrations' => fn ($q) => $q
-                ->whereIn('status', ['approved', 'completed'])
-                ->with('eventCategory.event')])
+            ->with([
+                'registrations' => fn ($q) => $q
+                    ->whereIn('status', ['approved', 'completed'])
+                    ->with('eventCategory.event'),
+                'runSubmissions' => fn ($q) => $q->where('status', 'approved'),
+            ])
             ->get()
             ->map(function (User $user) {
                 $completed = $user->registrations->where('status', 'completed');
@@ -45,7 +48,9 @@ class LeaderboardController extends Controller
                     'photo' => $user->profile_photo,
                     'events' => $user->registrations->count(),
                     'completed' => $completed->count(),
-                    'km' => round((float) $user->registrations->sum('completed_km'), 2),
+                    // Rank by the actual distance logged (approved runs), not the
+                    // per-event progress which is capped at each event's goal.
+                    'km' => round((float) $user->runSubmissions->sum('distance'), 2),
                     'recent' => $recent
                         ? "{$recent->eventCategory?->event?->name} Finisher"
                         : null,

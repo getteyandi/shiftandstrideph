@@ -305,8 +305,12 @@ export default function Create({ event, events }: Props) {
                                                     {category.name}
                                                 </div>
                                                 <div className="text-xs text-muted">
-                                                    {category.target_km} km
-                                                    target
+                                                    {Math.round(
+                                                        Number(
+                                                            category.target_km,
+                                                        ) * 100,
+                                                    ) / 100}{' '}
+                                                    km target
                                                 </div>
                                             </div>
                                         </div>

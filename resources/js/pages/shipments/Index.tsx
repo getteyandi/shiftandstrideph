@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { Package, Truck, CheckCircle2, Copy, MapPin } from 'lucide-react';
+import { Package, Truck, CheckCircle2, MapPin } from 'lucide-react';
 
 import AppLayout from '@/layouts/app-layout';
 
@@ -69,19 +69,9 @@ export default function Shipments({ shipments }: Props) {
                                                 {s.item}
                                             </h2>
                                             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        navigator.clipboard?.writeText(
-                                                            s.tracking_id,
-                                                        )
-                                                    }
-                                                    title="Copy tracking ID"
-                                                    className="inline-flex items-center gap-1.5 font-stat font-bold text-ink transition hover:text-lime-deep"
-                                                >
+                                                <span className="font-stat font-bold text-ink">
                                                     {s.tracking_id}
-                                                    <Copy size={13} />
-                                                </button>
+                                                </span>
                                                 {s.courier && (
                                                     <span className="inline-flex items-center gap-1">
                                                         <MapPin size={13} />

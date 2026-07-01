@@ -83,11 +83,7 @@ export default function ActiveEventCard({
         return (
             <Wrapper
                 {...wrapperProps}
-                style={{
-                    boxShadow:
-                        '0 0 0 1.5px rgba(166,226,18,.5), 0 0 45px rgba(166,226,18,.28), 0 0 90px rgba(166,226,18,.12)',
-                }}
-                className="group relative col-span-full block overflow-hidden rounded-[20px] border border-lime/50 bg-[linear-gradient(145deg,#12150d,#090b08)] text-white transition"
+                className="group animate-spotlightglow relative col-span-full block overflow-hidden rounded-[20px] border border-lime/50 bg-[linear-gradient(145deg,#12150d,#090b08)] text-white transition"
             >
                 {/* spotlight beam */}
                 <div
@@ -96,6 +92,15 @@ export default function ActiveEventCard({
                     style={{
                         background:
                             'radial-gradient(closest-side, rgba(166,226,18,.22), transparent 70%)',
+                    }}
+                />
+                {/* sweeping shine */}
+                <div
+                    aria-hidden
+                    className="animate-shine pointer-events-none absolute inset-y-0 left-0 w-1/3"
+                    style={{
+                        background:
+                            'linear-gradient(90deg, transparent, rgba(166,226,18,.14), transparent)',
                     }}
                 />
                 {r.banner && (

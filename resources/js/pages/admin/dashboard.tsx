@@ -298,11 +298,7 @@ function SpotlightTracker({ event }: { event: EventTracker }) {
     return (
         <Link
             href={`/events/${event.id}/board`}
-            style={{
-                boxShadow:
-                    '0 0 0 1.5px rgba(166,226,18,.5), 0 0 45px rgba(166,226,18,.28), 0 0 90px rgba(166,226,18,.12)',
-            }}
-            className="group relative block overflow-hidden rounded-3xl border border-lime/50 bg-[linear-gradient(145deg,#12150d,#090b08)] text-white transition"
+            className="group animate-spotlightglow relative block overflow-hidden rounded-3xl border border-lime/50 bg-[linear-gradient(145deg,#12150d,#090b08)] text-white transition"
         >
             <div
                 aria-hidden
@@ -380,16 +376,30 @@ function SpotlightTracker({ event }: { event: EventTracker }) {
 }
 
 function TrackerCard({ event }: { event: EventTracker }) {
+    // Only community runs have a meaningful shared progress bar. Solo/group
+    // events mirror the live board instead (no collective bar).
+    const showBar = event.preset === 'community';
+
     return (
-        <div className="rounded-3xl border border-[#dde3d5] bg-card p-7 shadow-sm">
+        <Link
+            href={`/events/${event.id}/board`}
+            className="group block rounded-3xl border border-[#dde3d5] bg-card p-7 shadow-sm transition hover:border-lime"
+        >
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <h3 className="font-display text-2xl font-black italic text-ink">
                         {event.name}
                     </h3>
-                    <div className="mt-2 flex items-center gap-2 text-sm text-[#70766a]">
-                        <MapPin size={15} />
-                        {event.location}
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-[#70766a]">
+                        <span className="inline-flex items-center gap-1.5">
+                            <MapPin size={15} />
+                            {event.location}
+                        </span>
+                        {event.preset && (
+                            <span className="rounded-full bg-[#eef7d8] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-lime-deep">
+                                {PRESET_LABEL[event.preset] ?? event.preset}
+                            </span>
+                        )}
                     </div>
                 </div>
                 <span className="shrink-0 rounded-full bg-[#EEF7D8] px-3 py-1 text-xs font-bold uppercase text-lime-deep">
@@ -397,41 +407,54 @@ function TrackerCard({ event }: { event: EventTracker }) {
                 </span>
             </div>
 
-            {/* progress */}
-            <div className="mt-6">
-                <div className="flex items-end justify-between">
-                    <span className="text-sm font-semibold text-[#70766a]">
-                        Goal completion
+            {showBar ? (
+                <>
+                    <div className="mt-6">
+                        <div className="flex items-end justify-between">
+                            <span className="text-sm font-semibold text-[#70766a]">
+                                Goal completion
+                            </span>
+                            <span className="font-display text-4xl font-black italic text-ink">
+                                {event.percentage}%
+                            </span>
+                        </div>
+                        <div className="mt-3 h-4 w-full overflow-hidden rounded-full bg-[#EEF1E8]">
+                            <div
+                                className="h-full rounded-full bg-lime transition-all"
+                                style={{ width: `${event.percentage}%` }}
+                            />
+                        </div>
+                        <div className="mt-3 flex justify-between text-sm">
+                            <span className="font-semibold text-ink">
+                                {event.completed_km.toLocaleString()} km done
+                            </span>
+                            <span className="text-[#70766a]">
+                                {event.remaining_km.toLocaleString()} km to goal
+                            </span>
+                        </div>
+                    </div>
+                    <div className="mt-6 grid grid-cols-3 gap-3 border-t border-line pt-5 text-center">
+                        <Metric label="Participants" value={event.participants} />
+                        <Metric
+                            label="Target km"
+                            value={event.target_km.toLocaleString()}
+                        />
+                        <Metric label="Ends" value={event.end_date ?? '—'} />
+                    </div>
+                </>
+            ) : (
+                <>
+                    <div className="mt-6 grid grid-cols-2 gap-3 border-t border-line pt-5 text-center">
+                        <Metric label="Participants" value={event.participants} />
+                        <Metric label="Ends" value={event.end_date ?? '—'} />
+                    </div>
+                    <span className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-line py-2.5 text-sm font-bold text-[#5A6152] transition group-hover:border-lime group-hover:text-lime-deep">
+                        <BarChart3 size={15} />
+                        View Live Board
                     </span>
-                    <span className="font-display text-4xl font-black italic text-ink">
-                        {event.percentage}%
-                    </span>
-                </div>
-
-                <div className="mt-3 h-4 w-full overflow-hidden rounded-full bg-[#EEF1E8]">
-                    <div
-                        className="h-full rounded-full bg-lime transition-all"
-                        style={{ width: `${event.percentage}%` }}
-                    />
-                </div>
-
-                <div className="mt-3 flex justify-between text-sm">
-                    <span className="font-semibold text-ink">
-                        {event.completed_km.toLocaleString()} km done
-                    </span>
-                    <span className="text-[#70766a]">
-                        {event.remaining_km.toLocaleString()} km to goal
-                    </span>
-                </div>
-            </div>
-
-            {/* footer */}
-            <div className="mt-6 grid grid-cols-3 gap-3 border-t border-line pt-5 text-center">
-                <Metric label="Participants" value={event.participants} />
-                <Metric label="Target km" value={event.target_km.toLocaleString()} />
-                <Metric label="Ends" value={event.end_date ?? '—'} />
-            </div>
-        </div>
+                </>
+            )}
+        </Link>
     );
 }
 

@@ -124,9 +124,7 @@
                             <div class="signame">{{ $template->signatory_name ?: 'Race Director' }}</div>
                             <div class="sigtitle">{{ $template->signatory_title ?: 'Shift & Stride PH' }}</div>
                         </td>
-                        <td class="col-right">
-                            Verify at<br>{{ $verifyUrl }}
-                        </td>
+                        <td class="col-right">&nbsp;</td>
                     </tr>
                 </table>
             </div>

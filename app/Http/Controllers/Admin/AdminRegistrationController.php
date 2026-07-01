@@ -45,7 +45,7 @@ class AdminRegistrationController extends Controller
                 ],
                 'event_category' => $r->eventCategory ? [
                     'name' => $r->eventCategory->name,
-                    'target_km' => $r->eventCategory->target_km,
+                    'target_km' => (float) $r->eventCategory->target_km,
                     'event' => $r->eventCategory->event ? [
                         'name' => $r->eventCategory->event->name,
                         'location' => $r->eventCategory->event->location,

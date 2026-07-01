@@ -8,7 +8,6 @@ use App\Models\Registration;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 
 class GroupController extends Controller
 {
@@ -92,8 +91,8 @@ class GroupController extends Controller
         return back();
     }
 
-    /** Invited runner accepts and joins the team (picking a category). */
-    public function accept(Request $request, GroupInvitation $invitation)
+    /** Invited runner accepts and joins the team (inherits the captain's category). */
+    public function accept(GroupInvitation $invitation)
     {
         $user = Auth::user();
         abort_unless($invitation->user_id === $user->id, 403);
@@ -106,15 +105,6 @@ class GroupController extends Controller
 
         $group = $invitation->group;
         $event = $group->event;
-
-        $validated = $request->validate([
-            'event_category_id' => [
-                'required',
-                Rule::exists('event_categories', 'id')
-                    ->where('event_id', $event->id),
-            ],
-        ]);
-
         $eventCatIds = $event->categories()->pluck('id');
 
         if (
@@ -134,11 +124,23 @@ class GroupController extends Controller
             return back();
         }
 
+        // Teammates join the captain's category (fallback: the event's first).
+        $categoryId = Registration::where('user_id', $group->created_by)
+            ->whereIn('event_category_id', $eventCatIds)
+            ->value('event_category_id')
+            ?? $event->categories()->value('id');
+
+        if (! $categoryId) {
+            $this->toast('This event has no categories yet.', 'error');
+
+            return back();
+        }
+
         $bib = Registration::whereIn('event_category_id', $eventCatIds)->count() + 1;
 
         Registration::create([
             'user_id' => $user->id,
-            'event_category_id' => $validated['event_category_id'],
+            'event_category_id' => $categoryId,
             'group_id' => $group->id,
             'bib_number' => sprintf('%05d', $bib),
             'status' => 'pending',

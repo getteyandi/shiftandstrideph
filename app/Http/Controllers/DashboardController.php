@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EventCategory;
 use App\Models\Registration;
+use App\Models\RunSubmission;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
@@ -31,18 +32,27 @@ class DashboardController extends Controller
             ->whereIn('status', ['approved', 'completed'])
             ->get();
 
-        // Overall contribution rank (position by total approved distance).
-        $totals = Registration::query()
-            ->whereIn('status', ['approved', 'completed'])
-            ->selectRaw('user_id, SUM(completed_km) as total')
+        // Overall contribution rank — by actual distance logged (approved runs),
+        // matching the Hall of Fame leaderboard.
+        $totals = RunSubmission::query()
+            ->where('status', 'approved')
+            ->selectRaw('user_id, SUM(distance) as total')
             ->groupBy('user_id')
-            ->havingRaw('SUM(completed_km) > 0')
+            ->havingRaw('SUM(distance) > 0')
             ->orderByDesc('total')
             ->pluck('user_id')
             ->values();
 
         $rankIndex = $totals->search($user->id);
         $rank = $rankIndex === false ? null : $rankIndex + 1;
+
+        // Actual total distance run (approved runs), rounded to 2 decimals.
+        $totalDistance = round(
+            (float) RunSubmission::where('user_id', $user->id)
+                ->where('status', 'approved')
+                ->sum('distance'),
+            2,
+        );
 
         // Best single-event distance and best per-event rank (top 20 only).
         $bestKm = (float) $registrations->max('completed_km');
@@ -106,7 +116,7 @@ class DashboardController extends Controller
 
                 'best_rank' => $bestRank,
 
-                'total_distance' => $registrations->sum('completed_km'),
+                'total_distance' => $totalDistance,
 
                 'events_completed' => $registrations
                     ->where('status', 'completed')

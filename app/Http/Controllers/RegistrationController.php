@@ -291,7 +291,7 @@ class RegistrationController extends Controller
                 'categories' => $event->categories->map(fn ($category) => [
                     'id' => $category->id,
                     'name' => $category->name,
-                    'target_km' => $category->target_km,
+                    'target_km' => (float) $category->target_km,
                     'ranking_enabled' => $category->ranking_enabled,
                 ]),
             ],
