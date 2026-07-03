@@ -20,10 +20,11 @@ use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\RunHistoryController;
 use App\Http\Controllers\RunSubmissionController;
 use App\Http\Controllers\ShipmentController;
+use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::inertia('/', 'welcome')->name('home');
+Route::get('/', [WelcomeController::class, 'index'])->name('home');
 
 // Public certificate authenticity check.
 Route::get(
