@@ -6,6 +6,7 @@ use App\Models\EventGroup;
 use App\Models\GroupInvitation;
 use App\Models\Registration;
 use App\Models\User;
+use App\Support\Emails;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -72,6 +73,11 @@ class GroupController extends Controller
             "{$user->full_name} invited you to join \"{$group->name}\" for {$group->event->name}.",
             route('events.show', $group->event_id),
             'invite',
+        );
+
+        $this->email(
+            $invitee,
+            Emails::teamInvitation($user->full_name, $group->name, $group->event->name, $group->event_id),
         );
 
         $this->toast('Invitation sent.');

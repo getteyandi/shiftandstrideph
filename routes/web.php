@@ -1,14 +1,15 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminCertificateTemplateController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminGroupController;
 use App\Http\Controllers\Admin\AdminRegistrationController;
 use App\Http\Controllers\Admin\AdminRunSubmissionController;
 use App\Http\Controllers\Admin\AdminShipmentController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\EventCategoryController;
 use App\Http\Controllers\Admin\EventController;
-use App\Http\Controllers\Admin\AdminGroupController;
-use App\Http\Controllers\Admin\AdminCertificateTemplateController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventBoardController;
@@ -31,6 +32,33 @@ Route::get(
     '/verify/{serial}',
     [CertificateController::class, 'verify']
 )->name('certificates.verify');
+
+/*
+|--------------------------------------------------------------------------
+| Registration (email-verified, multi-step)
+|--------------------------------------------------------------------------
+*/
+Route::middleware('guest')->group(function () {
+    Route::get(
+        '/register',
+        [RegisterController::class, 'create']
+    )->name('register');
+
+    Route::post(
+        '/register/otp',
+        [RegisterController::class, 'sendOtp']
+    )->middleware('throttle:20,1')->name('register.otp');
+
+    Route::post(
+        '/register/otp/resend',
+        [RegisterController::class, 'resendOtp']
+    )->middleware('throttle:20,1')->name('register.otp.resend');
+
+    Route::post(
+        '/register/verify',
+        [RegisterController::class, 'verifyOtp']
+    )->middleware('throttle:30,1')->name('register.verify');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -315,4 +343,4 @@ Route::middleware('auth')->group(function () {
     )->name('notifications.read-all');
 });
 
-require __DIR__ . '/settings.php';
+require __DIR__.'/settings.php';

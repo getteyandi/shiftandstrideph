@@ -161,7 +161,8 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Registration is handled by App\Http\Controllers\Auth\RegisterController
+        // (email-verified, multi-step) instead of Fortify's built-in flow.
         Features::resetPasswords(),
         Features::emailVerification(),
         Features::twoFactorAuthentication([

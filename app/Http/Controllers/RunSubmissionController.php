@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Registration;
 use App\Models\RunSubmission;
+use App\Support\Emails;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -131,6 +132,11 @@ class RunSubmissionController extends Controller
                 . ' km run for review.',
             route('admin.run-submissions.index'),
             'registration',
+        );
+
+        $this->email(
+            $this->admins(),
+            Emails::adminNewRun($runner, (float) $validated['distance']),
         );
 
         $this->toast('Run submitted for review.');

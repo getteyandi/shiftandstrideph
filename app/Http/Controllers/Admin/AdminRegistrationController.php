@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Registration;
-use App\Notifications\RegistrationApprovedNotification;
+use App\Support\Emails;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -96,11 +96,10 @@ class AdminRegistrationController extends Controller
         $registration->loadMissing('eventCategory.event');
         $registration->eventCategory?->event?->closeIfQuotaReached();
 
-        $registration->user->notify(
-            new RegistrationApprovedNotification()
-        );
-
         $registration->loadMissing('eventCategory.event');
+
+        $this->email($registration->user, Emails::registrationApproved($registration));
+
         $eventName = $registration->eventCategory?->event?->name ?? 'the event';
         $this->notifyUsers(
             $registration->user,
@@ -130,6 +129,12 @@ class AdminRegistrationController extends Controller
         ]);
 
         $registration->loadMissing('eventCategory.event');
+
+        $this->email(
+            $registration->user,
+            Emails::registrationRejected($registration, $validated['rejection_reason']),
+        );
+
         $eventName = $registration->eventCategory?->event?->name ?? 'the event';
         $this->notifyUsers(
             $registration->user,

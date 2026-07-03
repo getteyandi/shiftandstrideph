@@ -8,9 +8,16 @@ test('guests are redirected to the login page', function () {
 });
 
 test('authenticated users can visit the dashboard', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->onboarded()->create();
     $this->actingAs($user);
 
     $response = $this->get(route('dashboard'));
     $response->assertOk();
+});
+
+test('users who have not completed onboarding are redirected to onboarding', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $this->get(route('dashboard'))->assertRedirect(route('onboarding.create'));
 });

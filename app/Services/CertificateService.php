@@ -6,7 +6,9 @@ use App\Models\Certificate;
 use App\Models\CertificateTemplate;
 use App\Models\Registration;
 use App\Notifications\AppNotification;
+use App\Support\Emails;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class CertificateService
@@ -63,6 +65,17 @@ class CertificateService
             route('certificates.download', $registration),
             'approval',
         ));
+
+        try {
+            $registration->user?->notify(
+                Emails::certificateReady($registration, $event?->name ?? 'your event'),
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Certificate email failed to send.', [
+                'registration_id' => $registration->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return $certificate;
     }

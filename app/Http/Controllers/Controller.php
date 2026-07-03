@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Notifications\AppNotification;
+use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 abstract class Controller
@@ -42,5 +44,34 @@ abstract class Controller
     protected function admins()
     {
         return User::where('role', 'admin')->get();
+    }
+
+    /**
+     * Send a transactional email to one or more users (null entries skipped).
+     *
+     * Delivery is synchronous, so a mailer outage must never break the request
+     * the user just triggered — failures are logged and swallowed instead.
+     *
+     * @param  User|iterable<User|null>|null  $users
+     */
+    protected function email(User|iterable|null $users, Notification $notification): void
+    {
+        $list = $users instanceof User ? [$users] : ($users ?? []);
+
+        foreach ($list as $user) {
+            if (! $user) {
+                continue;
+            }
+
+            try {
+                $user->notify($notification);
+            } catch (\Throwable $e) {
+                Log::warning('Transactional email failed to send.', [
+                    'user_id' => $user->id ?? null,
+                    'notification' => $notification::class,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 }

@@ -5,8 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Registration;
 use App\Models\RunSubmission;
-use App\Notifications\RunApprovedNotification;
-use App\Notifications\RunRejectedNotification;
+use App\Support\Emails;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -123,15 +122,13 @@ class AdminRunSubmissionController extends Controller
             $this->completeTeamIfGoalReached($registration);
         }
 
-        $runSubmission->user->notify(
-            new RunApprovedNotification()
-        );
-
         // Run-approved notification links to the (first) event's live board.
         $eventId = $registrations->first()?->eventCategory?->event_id;
         $boardUrl = $eventId
             ? route('events.board', $eventId)
             : route('my-runs.index');
+
+        $this->email($runSubmission->user, Emails::runApproved($runSubmission, $boardUrl));
 
         $this->notifyUsers(
             $runSubmission->user,
@@ -155,6 +152,8 @@ class AdminRunSubmissionController extends Controller
                 route('leaderboards.index'),
                 'approval',
             );
+
+            $this->email($runSubmission->user, Emails::reachedTopTwenty($rankAfter));
         }
 
         $this->toast('Run approved. Distance credited.');
@@ -177,8 +176,9 @@ class AdminRunSubmissionController extends Controller
             'reviewed_at' => now(),
         ]);
 
-        $runSubmission->user->notify(
-            new RunRejectedNotification()
+        $this->email(
+            $runSubmission->user,
+            Emails::runRejected($runSubmission, $validated['rejection_reason']),
         );
 
         $this->notifyUsers(

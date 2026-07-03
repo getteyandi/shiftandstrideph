@@ -12,13 +12,24 @@ test('profile page is displayed', function () {
     $response->assertOk();
 });
 
-test('profile information can be updated', function () {
-    $user = User::factory()->create();
+$profilePayload = [
+    'first_name' => 'Test',
+    'last_name' => 'User',
+    'gender' => 'Male',
+    'birthday' => '2000-01-01',
+    'province' => 'Metro Manila',
+    'city' => 'Quezon City',
+    'island' => 'Luzon',
+    'address' => '123 Runner St.',
+];
+
+test('profile information can be updated', function () use ($profilePayload) {
+    $user = User::factory()->onboarded()->create();
 
     $response = $this
         ->actingAs($user)
         ->patch(route('profile.update'), [
-            'name' => 'Test User',
+            ...$profilePayload,
             'email' => 'test@example.com',
         ]);
 
@@ -28,18 +39,18 @@ test('profile information can be updated', function () {
 
     $user->refresh();
 
-    expect($user->first_name . ' ' . $user->last_name)->toBe('Test User');
+    expect($user->first_name.' '.$user->last_name)->toBe('Test User');
     expect($user->email)->toBe('test@example.com');
     expect($user->email_verified_at)->toBeNull();
 });
 
-test('email verification status is unchanged when the email address is unchanged', function () {
-    $user = User::factory()->create();
+test('email verification status is unchanged when the email address is unchanged', function () use ($profilePayload) {
+    $user = User::factory()->onboarded()->create();
 
     $response = $this
         ->actingAs($user)
         ->patch(route('profile.update'), [
-            'name' => 'Test User',
+            ...$profilePayload,
             'email' => $user->email,
         ]);
 

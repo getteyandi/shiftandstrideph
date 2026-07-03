@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\EventGroup;
+use App\Support\Emails;
 
 class AdminGroupController extends Controller
 {
@@ -20,6 +21,11 @@ class AdminGroupController extends Controller
             'Team approved',
             "Your team \"{$group->name}\" was approved. Start logging runs!",
             'approval',
+        );
+
+        $this->emailMembers(
+            $group,
+            Emails::teamApproved($group->name, $group->event?->name ?? 'the event', $group->event_id),
         );
 
         $this->toast("Team \"{$group->name}\" approved.");
@@ -45,6 +51,11 @@ class AdminGroupController extends Controller
             'rejection',
         );
 
+        $this->emailMembers(
+            $group,
+            Emails::teamDenied($group->name, $group->event?->name ?? 'the event', $group->event_id),
+        );
+
         $this->toast("Team \"{$group->name}\" denied.");
 
         return back();
@@ -62,6 +73,17 @@ class AdminGroupController extends Controller
             $body,
             $url,
             $category,
+        );
+    }
+
+    /** Email every member of the team (captain + accepted runners). */
+    private function emailMembers(EventGroup $group, \Illuminate\Notifications\Notification $notification): void
+    {
+        $group->loadMissing('registrations.user');
+
+        $this->email(
+            $group->registrations->map(fn ($r) => $r->user)->filter(),
+            $notification,
         );
     }
 }

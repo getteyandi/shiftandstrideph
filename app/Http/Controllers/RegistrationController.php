@@ -8,6 +8,7 @@ use App\Models\GroupInvitation;
 use App\Models\Registration;
 use App\Models\RunSubmission;
 use App\Models\User;
+use App\Support\Emails;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -402,6 +403,9 @@ class RegistrationController extends Controller
                 'registration',
             );
 
+            $this->email($user, Emails::registrationSubmitted($registration));
+            $this->email($this->admins(), Emails::adminNewTeam($user, $group->name, $eventName));
+
             $this->toast('Team created! Invite your teammates below — an admin will review the team.');
 
             return redirect()->route('events.show', $event);
@@ -414,6 +418,9 @@ class RegistrationController extends Controller
             route('admin.registrations.index'),
             'registration',
         );
+
+        $this->email($user, Emails::registrationSubmitted($registration));
+        $this->email($this->admins(), Emails::adminNewRegistration($user, $eventName));
 
         $this->toast('Registration submitted! An admin will review it shortly.');
 

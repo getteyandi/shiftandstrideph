@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Shipment;
 use App\Models\User;
+use App\Support\Emails;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -78,13 +79,18 @@ class AdminShipmentController extends Controller
 
         $shipment = Shipment::create($validated);
 
+        $recipient = User::find($validated['user_id']);
+
         $this->notifyUsers(
-            User::find($validated['user_id']),
+            $recipient,
             'Shipment on the way',
             "Your {$shipment->item} (#{$shipment->tracking_id}) is being prepared.",
             route('shipments.index'),
             'info',
         );
+
+        $shipment->setRelation('user', $recipient);
+        $this->email($recipient, Emails::shipmentUpdate($shipment, 'preparing'));
 
         $this->toast('Shipment created.');
 
@@ -120,6 +126,8 @@ class AdminShipmentController extends Controller
             route('shipments.index'),
             'info',
         );
+
+        $this->email($shipment->user, Emails::shipmentUpdate($shipment, $validated['status']));
 
         $this->toast("Shipment marked as {$validated['status']}.");
 

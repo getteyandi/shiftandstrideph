@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Notifications\UserApprovedNotification;
+use App\Support\Emails;
 use Inertia\Inertia;
 
 class AdminUserController extends Controller
@@ -45,9 +45,7 @@ class AdminUserController extends Controller
             'status' => 'active',
         ]);
 
-        $user->notify(
-            new UserApprovedNotification()
-        );
+        $this->email($user, Emails::accountApproved());
 
         $this->notifyUsers(
             $user,
@@ -67,6 +65,8 @@ class AdminUserController extends Controller
         $user->update([
             'status' => 'suspended',
         ]);
+
+        $this->email($user, Emails::accountDeclined());
 
         $this->toast('Account suspended.');
 
