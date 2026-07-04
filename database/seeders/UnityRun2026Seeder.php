@@ -36,6 +36,9 @@ class UnityRun2026Seeder extends Seeder
 
     private const CSV = 'database/data/unity-run-2026-runners.csv';
 
+    /** Real runner contact details (name + email) exported separately. */
+    private const CONTACTS = 'database/data/unity-run-2026-contacts.csv';
+
     /**
      * Category name (as it appears in the CSV) => fixed target distance.
      * "Open KM" has no fixed goal, so 0 (open / uncapped).
@@ -47,6 +50,21 @@ class UnityRun2026Seeder extends Seeder
         '200KM' => ['target' => 200, 'ranking' => true, 'order' => 2],
         '300KM' => ['target' => 300, 'ranking' => true, 'order' => 3],
     ];
+
+    /**
+     * Normalised full name => real email, loaded from the contacts export.
+     *
+     * @var array<string, string>
+     */
+    private array $contacts = [];
+
+    /**
+     * Emails already assigned during this run, so two runners never collide on
+     * the unique users.email column (e.g. relatives sharing one address).
+     *
+     * @var array<string, true>
+     */
+    private array $usedEmails = [];
 
     public function run(): void
     {
@@ -60,6 +78,7 @@ class UnityRun2026Seeder extends Seeder
 
         $event = $this->event();
         $categoryModels = $this->categoryModels($event);
+        $this->contacts = $this->loadContacts();
 
         $handle = fopen($path, 'r');
         $header = fgetcsv($handle);
@@ -75,6 +94,11 @@ class UnityRun2026Seeder extends Seeder
 
         $seeded = 0;
         $skipped = 0;
+
+        // Track how emails were resolved so the summary can flag manual follow-ups.
+        $matchedEmails = 0;
+        $noContact = [];
+        $duplicateEmail = [];
 
         while (($row = fgetcsv($handle)) !== false) {
             // Skip fully blank lines.
@@ -102,12 +126,30 @@ class UnityRun2026Seeder extends Seeder
             $lastName = $get('LastName');
             $birthday = $this->date($get('Birthday'));
 
+            // Prefer the runner's real email from the contacts export; fall back
+            // to a unique placeholder when there's no match or it's already taken.
+            $realEmail = $this->contacts[$this->nameKey($firstName, $lastName)] ?? null;
+
+            if ($realEmail !== null && ! $this->emailTaken($realEmail, $runnerCode)) {
+                $email = $realEmail;
+                $matchedEmails++;
+            } else {
+                $email = $this->defaultEmail($firstName, $lastName, $birthday, $runnerCode);
+                if ($realEmail !== null) {
+                    $duplicateEmail[] = "{$firstName} {$lastName} → {$realEmail}";
+                } else {
+                    $noContact[] = trim("{$firstName} {$lastName}");
+                }
+            }
+
+            $this->usedEmails[$email] = true;
+
             $user = User::updateOrCreate(
                 ['runner_code' => $runnerCode],
                 [
                     'first_name' => $firstName,
                     'last_name' => $lastName,
-                    'email' => $this->email($runnerCode, $bib),
+                    'email' => $email,
                     'status' => 'active',
                     'verified' => true,
                     'profile_photo' => $get('ProfilePhoto') !== '' ? $get('ProfilePhoto') : null,
@@ -154,6 +196,95 @@ class UnityRun2026Seeder extends Seeder
         fclose($handle);
 
         $this->command?->info("Unity Run 2026: seeded {$seeded} runners ({$skipped} rows skipped).");
+        $this->command?->info("Emails: {$matchedEmails} matched from contacts, ".(count($noContact) + count($duplicateEmail)).' given a placeholder.');
+
+        if ($noContact !== []) {
+            $this->command?->warn('No contact email found (placeholder used): '.implode('; ', $noContact));
+        }
+
+        if ($duplicateEmail !== []) {
+            $this->command?->warn('Contact email already used by another runner (placeholder used): '.implode('; ', $duplicateEmail));
+        }
+    }
+
+    /**
+     * Load the contacts export into a "normalised full name => email" map.
+     * Only syntactically valid emails are kept; the first valid entry for a
+     * given name wins (later duplicate/invalid rows are ignored).
+     *
+     * @return array<string, string>
+     */
+    private function loadContacts(): array
+    {
+        $path = base_path(self::CONTACTS);
+
+        if (! is_file($path)) {
+            $this->command?->warn('Contacts file not found — every runner will get a placeholder email.');
+
+            return [];
+        }
+
+        $handle = fopen($path, 'r');
+        $header = fgetcsv($handle);
+
+        if ($header === false) {
+            fclose($handle);
+
+            return [];
+        }
+
+        $idx = array_flip(array_map(static fn ($h) => trim((string) $h), $header));
+        $map = [];
+
+        while (($row = fgetcsv($handle)) !== false) {
+            $get = static function (string $column) use ($row, $idx): string {
+                return isset($idx[$column]) ? trim((string) ($row[$idx[$column]] ?? '')) : '';
+            };
+
+            $email = Str::lower($get('Email Address'));
+            $key = $this->nameKey($get('First Name'), $get('Last Name'));
+
+            if ($key === '' || ! $this->looksLikeEmail($email)) {
+                continue;
+            }
+
+            // First valid email for a name wins.
+            $map[$key] ??= $email;
+        }
+
+        fclose($handle);
+
+        return $map;
+    }
+
+    /** Normalised match key: ASCII, letters/digits only, lowercased full name. */
+    private function nameKey(string $first, string $last): string
+    {
+        $ascii = Str::ascii(trim($first).' '.trim($last));
+
+        return Str::lower((string) preg_replace('/[^A-Za-z0-9]/', '', $ascii));
+    }
+
+    /** A permissive check that a string is shaped like an email address. */
+    private function looksLikeEmail(string $email): bool
+    {
+        return (bool) preg_match('/^[^@\s]+@[^@\s]+\.[^@\s]+$/', $email);
+    }
+
+    /**
+     * Whether an email is already claimed — either earlier in this run or by a
+     * different user already in the database (the same runner keeping its own
+     * email on re-seed does not count).
+     */
+    private function emailTaken(string $email, string $runnerCode): bool
+    {
+        if (isset($this->usedEmails[$email])) {
+            return true;
+        }
+
+        return User::where('email', $email)
+            ->where(fn ($q) => $q->whereNull('runner_code')->orWhere('runner_code', '!=', $runnerCode))
+            ->exists();
     }
 
     /** Create (or reuse) the Unity Run 2026 event. */
@@ -203,14 +334,31 @@ class UnityRun2026Seeder extends Seeder
     }
 
     /**
-     * Deterministic placeholder email (the CSV carries no email address).
-     * Keyed on the runner code so re-seeding is stable and collision-free.
+     * Placeholder email for runners with no usable contact address:
+     * first initial + surname + birth MMDD @default.com (e.g. Frank Pauchano,
+     * born 9 April => fpauchano0409@default.com). Falls back to the runner code
+     * for the local part when the name/birthday is missing, and appends the
+     * runner code if the address is somehow already taken.
      */
-    private function email(string $runnerCode, string $bib): string
+    private function defaultEmail(string $firstName, string $lastName, ?Carbon $birthday, string $runnerCode): string
     {
-        $local = Str::slug($runnerCode !== '' ? $runnerCode : $bib);
+        $initial = Str::lower(Str::substr(Str::ascii(trim($firstName)), 0, 1));
+        $surname = Str::lower((string) preg_replace('/[^A-Za-z]/', '', Str::ascii(trim($lastName))));
+        $mmdd = $birthday?->format('md') ?? '';
 
-        return "{$local}@runners.unityrun2026.seed";
+        $local = "{$initial}{$surname}{$mmdd}";
+
+        if ($local === '') {
+            $local = Str::lower(Str::slug($runnerCode));
+        }
+
+        $email = "{$local}@default.com";
+
+        if ($this->emailTaken($email, $runnerCode)) {
+            $email = "{$local}-".Str::lower(Str::slug($runnerCode)).'@default.com';
+        }
+
+        return $email;
     }
 
     /**
@@ -221,7 +369,7 @@ class UnityRun2026Seeder extends Seeder
     private function password(string $firstName, string $lastName, ?Carbon $birthday): string
     {
         $initial = Str::lower(Str::substr(Str::ascii(trim($firstName)), 0, 1));
-        $surname = Str::lower((string) preg_replace('/[^a-z]/', '', Str::ascii(trim($lastName))));
+        $surname = Str::lower((string) preg_replace('/[^A-Za-z]/', '', Str::ascii(trim($lastName))));
         $year = $birthday?->year ?? '';
 
         $password = "{$initial}{$surname}{$year}";

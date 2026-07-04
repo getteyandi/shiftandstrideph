@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -24,9 +25,23 @@ class DatabaseSeeder extends Seeder
         //     'status' => 'active',
         // ]);
 
-        $this->call([
-            // FullPipelineSeeder::class,
-            UnityRun2026Seeder::class,
-        ]);
+        $this->call(
+            [
+                // FullPipelineSeeder::class,
+                UnityRun2026Seeder::class,
+            ],
+            User::updateOrCreate(
+                ['email' => 'admin@example.com'],
+                [
+                    'first_name' => 'SASPH',
+                    'last_name' => 'Admin',
+                    'status' => 'active',
+                    'role' => 'admin',
+                    'verified' => true,
+                    'email_verified_at' => now(),
+                    'password' => Hash::make('password'),
+                ],
+            )
+        );
     }
 }
