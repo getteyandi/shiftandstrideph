@@ -494,6 +494,13 @@ export default function HallOfFame({
                                 </Select>
 
                                 <div className="rounded-2xl border border-[#1c2114] bg-[radial-gradient(420px_180px_at_50%_-20%,rgba(166,226,18,.16),transparent_60%)] p-5">
+                                    {!selectedEvent ||
+                                    selectedEvent.top.length === 0 ? (
+                                        <p className="py-8 text-center text-sm text-[#8c9882]">
+                                            No finishers yet for this event — be
+                                            the first to log a run.
+                                        </p>
+                                    ) : (
                                     <div className="flex items-end justify-center gap-3">
                                         {podiumOrder.map((idx) => {
                                             const p = selectedEvent?.top[idx];
@@ -549,6 +556,7 @@ export default function HallOfFame({
                                             );
                                         })}
                                     </div>
+                                    )}
                                 </div>
                             </>
                         )}
@@ -619,6 +627,26 @@ export default function HallOfFame({
     );
 }
 
+/**
+ * Build a compact list of page numbers around the current page, collapsing the
+ * gaps with ellipses so long lists (e.g. 19 pages) never overflow the card.
+ * Always keeps the first and last page visible.
+ */
+function pageItems(page: number, pages: number): (number | 'gap')[] {
+    const window = 1; // pages shown on each side of the current one
+    const items: (number | 'gap')[] = [];
+    const start = Math.max(2, page - window);
+    const end = Math.min(pages - 1, page + window);
+
+    items.push(1);
+    if (start > 2) items.push('gap');
+    for (let n = start; n <= end; n++) items.push(n);
+    if (end < pages - 1) items.push('gap');
+    if (pages > 1) items.push(pages);
+
+    return items;
+}
+
 function Pager({
     page,
     pages,
@@ -629,11 +657,10 @@ function Pager({
     onChange: (p: number) => void;
 }) {
     if (pages <= 1) return null;
-    const nums = Array.from({ length: pages }, (_, i) => i + 1);
     const btn =
         'flex h-8 min-w-8 items-center justify-center rounded-full border px-2 text-sm font-bold transition';
     return (
-        <div className="mt-5 flex items-center justify-center gap-1.5">
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-1.5">
             <button
                 type="button"
                 disabled={page === 1}
@@ -642,20 +669,29 @@ function Pager({
             >
                 <ChevronLeft size={15} />
             </button>
-            {nums.map((n) => (
-                <button
-                    key={n}
-                    type="button"
-                    onClick={() => onChange(n)}
-                    className={`${btn} ${
-                        n === page
-                            ? 'border-lime bg-lime text-[#12150d]'
-                            : 'border-[#1c2114] text-[#8c9882] hover:border-lime'
-                    }`}
-                >
-                    {n}
-                </button>
-            ))}
+            {pageItems(page, pages).map((item, i) =>
+                item === 'gap' ? (
+                    <span
+                        key={`gap-${i}`}
+                        className="flex h-8 min-w-8 items-center justify-center px-1 text-sm font-bold text-[#5f6a52]"
+                    >
+                        …
+                    </span>
+                ) : (
+                    <button
+                        key={item}
+                        type="button"
+                        onClick={() => onChange(item)}
+                        className={`${btn} ${
+                            item === page
+                                ? 'border-lime bg-lime text-[#12150d]'
+                                : 'border-[#1c2114] text-[#8c9882] hover:border-lime'
+                        }`}
+                    >
+                        {item}
+                    </button>
+                ),
+            )}
             <button
                 type="button"
                 disabled={page === pages}

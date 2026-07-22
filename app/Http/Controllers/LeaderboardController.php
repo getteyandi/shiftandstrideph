@@ -62,13 +62,19 @@ class LeaderboardController extends Controller
     }
 
     /**
-     * Top 3 distance leaders for each published event.
+     * Top 3 distance leaders for every published event.
+     *
+     * Every published event is returned — even ones with no finishers yet —
+     * so the Hall of Fame lists all events dynamically as they are added.
+     * Events that already have leaders are ordered first so the default
+     * selection lands on one with data.
      */
     protected function eventRankings()
     {
         return Event::query()
             ->where('is_published', true)
             ->with(['categories.registrations.user'])
+            ->orderByDesc('start_date')
             ->get()
             ->map(function (Event $event) {
 
@@ -95,7 +101,9 @@ class LeaderboardController extends Controller
                     'top' => $top,
                 ];
             })
-            ->filter(fn ($event) => $event['top']->isNotEmpty())
+            // Keep every event, but surface those with leaders first (stable
+            // sort preserves the start-date order within each group).
+            ->sortByDesc(fn ($event) => $event['top']->count())
             ->values();
     }
 

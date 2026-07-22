@@ -28,7 +28,10 @@ class DatabaseSeeder extends Seeder
         $this->call(
             [
                 // FullPipelineSeeder::class,
+                EventCatalogSeeder::class,
+                EventRosterSeeder::class,
                 UnityRun2026Seeder::class,
+                UnityRun2026ActivitySeeder::class,
             ],
             User::updateOrCreate(
                 ['email' => 'admin@example.com'],
