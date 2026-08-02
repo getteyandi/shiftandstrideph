@@ -21,6 +21,7 @@ class RegistrationController extends Controller
         $user = Auth::user();
 
         $filter = $request->query('filter', 'active');
+        $search = trim((string) $request->query('search', ''));
 
         $statusMap = [
             'active' => ['open', 'upcoming'],
@@ -56,6 +57,11 @@ class RegistrationController extends Controller
                 isset($statusMap[$filter]),
                 fn ($query) => $query->whereIn('status', $statusMap[$filter]),
             )
+            ->when($search !== '', fn ($query) => $query->where(
+                fn ($q) => $q
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('location', 'like', "%{$search}%"),
+            ))
             ->orderByDesc('start_date');
 
         // Every featured (highlighted) event, others paginated below.
@@ -126,6 +132,7 @@ class RegistrationController extends Controller
             'events' => $events,
             'joinedEvents' => $joinedEvents,
             'filter' => $filter,
+            'search' => $search,
         ]);
     }
 

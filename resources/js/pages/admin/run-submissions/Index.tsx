@@ -3,6 +3,9 @@ import StatTile from '@/components/StatTile';
 import AppLayout from '@/layouts/app-layout';
 import Pagination, { type PaginationLink } from '@/components/Pagination';
 import RejectDialog from '@/components/RejectDialog';
+import DeleteDialog from '@/components/DeleteDialog';
+import SearchBar from '@/components/SearchBar';
+import EditRunDialog from '@/components/admin/EditRunDialog';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import {
@@ -12,6 +15,9 @@ import {
     MapPin,
     Hash,
     Maximize2,
+    Trash2,
+    Pencil,
+    CalendarDays,
     ExternalLink as LinkIcon,
 } from 'lucide-react';
 
@@ -30,6 +36,8 @@ interface Submission {
     runner_name: string;
     runner_code: string;
     km: number | string;
+    run_date?: string | null;
+    run_date_input?: string | null;
     events: EventTag[];
     submitted_at: string;
     status: string; // 'pending' | 'approved' | 'rejected'
@@ -50,6 +58,8 @@ interface Paginated<T> {
 interface VerificationProps {
     stats: AdminStat[];
     submissions: Paginated<Submission>;
+    filter: string;
+    search: string;
 }
 
 const statusPill = (status: string) => {
@@ -63,14 +73,74 @@ const statusPill = (status: string) => {
     }
 };
 
+// Map each stat card + tab to the status value the backend filters on.
+// "Declined" is the runner-facing label for the stored "rejected" status.
+const FILTERS: { key: string; label: string; statLabel: string }[] = [
+    { key: 'all', label: 'All', statLabel: 'Total' },
+    { key: 'pending', label: 'Pending', statLabel: 'Pending' },
+    { key: 'approved', label: 'Approved', statLabel: 'Approved' },
+    { key: 'rejected', label: 'Declined', statLabel: 'Rejected' },
+];
+
 export default function Verification({
     stats,
     submissions,
+    filter,
+    search,
 }: VerificationProps) {
     const [statusById, setStatusById] = useState<Record<string, string>>({});
     const [zoom, setZoom] = useState<Submission | null>(null);
     const [rejectId, setRejectId] = useState<Submission['id'] | null>(null);
     const [rejecting, setRejecting] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<Submission | null>(null);
+    const [deleting, setDeleting] = useState(false);
+    const [editTarget, setEditTarget] = useState<Submission | null>(null);
+    const [editing, setEditing] = useState(false);
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    function saveEdit(values: {
+        distance: string;
+        run_date: string;
+        notes: string;
+    }) {
+        if (!editTarget) return;
+        setEditing(true);
+        router.patch(`/admin/run-submissions/${editTarget.id}`, values, {
+            preserveScroll: true,
+            onSuccess: () => setEditTarget(null),
+            onFinish: () => setEditing(false),
+        });
+    }
+
+    const go = (params: Record<string, string>) =>
+        router.get('/admin/run-submissions', params, {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+        });
+
+    const setFilter = (status: string) =>
+        go({
+            ...(status === 'all' ? {} : { status }),
+            ...(search ? { search } : {}),
+        });
+
+    const onSearch = (term: string) =>
+        go({
+            ...(filter === 'all' ? {} : { status: filter }),
+            ...(term ? { search: term } : {}),
+        });
+
+    function destroy() {
+        if (!deleteTarget) return;
+        setDeleting(true);
+        router.delete(`/admin/run-submissions/${deleteTarget.id}`, {
+            preserveScroll: true,
+            onSuccess: () => setDeleteTarget(null),
+            onFinish: () => setDeleting(false),
+        });
+    }
 
     const rows = submissions.data.map((s) => ({
         ...s,
@@ -119,15 +189,60 @@ export default function Verification({
                     </h1>
                 </div>
 
-                <div className="mb-[26px] grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-4">
-                    {stats.map((st) => (
-                        <StatTile
-                            key={st.label}
-                            label={st.label}
-                            value={st.value}
-                            glow={st.glow}
-                        />
-                    ))}
+                <div className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-4">
+                    {stats.map((st) => {
+                        const target = FILTERS.find(
+                            (f) => f.statLabel === st.label,
+                        );
+                        const on = target ? filter === target.key : false;
+                        return (
+                            <button
+                                key={st.label}
+                                type="button"
+                                onClick={() =>
+                                    target && setFilter(target.key)
+                                }
+                                className={`rounded-2xl text-left transition ${
+                                    on
+                                        ? 'ring-2 ring-lime'
+                                        : 'ring-0 hover:opacity-90'
+                                }`}
+                            >
+                                <StatTile
+                                    label={st.label}
+                                    value={st.value}
+                                    glow={st.glow}
+                                />
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* STATUS TABS + SEARCH */}
+                <div className="mb-[26px] flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-wrap gap-3">
+                        {FILTERS.map((f) => {
+                            const on = filter === f.key;
+                            return (
+                                <button
+                                    key={f.key}
+                                    onClick={() => setFilter(f.key)}
+                                    className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+                                        on
+                                            ? 'bg-black text-lime'
+                                            : 'border border-line bg-card text-muted hover:border-lime hover:text-lime'
+                                    }`}
+                                >
+                                    {f.label}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <SearchBar
+                        initial={search}
+                        placeholder="Search runner or code…"
+                        onSearch={onSearch}
+                    />
                 </div>
 
                 <SectionHeader
@@ -198,6 +313,12 @@ export default function Verification({
                                             <div className="text-[12.5px] font-semibold text-[#aeb4a4]">
                                                 {s.runner_code} · {s.submitted_at}
                                             </div>
+                                            {s.run_date && (
+                                                <div className="mt-0.5 inline-flex items-center gap-1 text-[12px] font-semibold text-lime-deep">
+                                                    <CalendarDays size={12} />
+                                                    Ran {s.run_date}
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="shrink-0 text-right">
                                             <span className="font-display text-[26px] leading-none font-extrabold text-ink italic">
@@ -247,6 +368,24 @@ export default function Verification({
 
                                     {/* ACTIONS */}
                                     <div className="mt-auto flex items-center justify-end gap-2 pt-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setDeleteTarget(s)}
+                                            title="Delete this submission"
+                                            className="mr-auto inline-flex items-center gap-1.5 rounded-[10px] border-[1.5px] border-line bg-card px-3 py-[9px] text-[13.5px] font-bold text-[#8a8f80] transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                                        >
+                                            <Trash2 size={15} />
+                                            Delete
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setEditTarget(s)}
+                                            title="Edit this submission"
+                                            className="inline-flex items-center gap-1.5 rounded-[10px] border-[1.5px] border-line bg-card px-3 py-[9px] text-[13.5px] font-bold text-[#5A6152] transition-colors hover:border-lime hover:text-ink"
+                                        >
+                                            <Pencil size={15} />
+                                            Edit
+                                        </button>
                                         {s.status === 'pending' ? (
                                             <>
                                                 <button
@@ -303,6 +442,33 @@ export default function Verification({
                 title="Reject run submission"
                 processing={rejecting}
                 onConfirm={reject}
+            />
+
+            <EditRunDialog
+                open={editTarget !== null}
+                onOpenChange={(o) => !o && setEditTarget(null)}
+                run={editTarget}
+                today={today}
+                processing={editing}
+                onConfirm={saveEdit}
+            />
+
+            <DeleteDialog
+                open={deleteTarget !== null}
+                onOpenChange={(o) => !o && setDeleteTarget(null)}
+                title="Delete run submission?"
+                description={
+                    deleteTarget
+                        ? `${deleteTarget.runner_name}'s ${deleteTarget.km} km run will be permanently removed.${
+                              deleteTarget.status === 'approved'
+                                  ? ' Its credited distance will be reversed from the runner’s event progress.'
+                                  : ''
+                          }`
+                        : ''
+                }
+                confirmPhrase={deleteTarget?.runner_name ?? ''}
+                processing={deleting}
+                onConfirm={destroy}
             />
 
             {/* PHOTO LIGHTBOX */}

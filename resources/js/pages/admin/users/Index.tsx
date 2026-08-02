@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import {
     Users,
@@ -10,10 +10,14 @@ import {
     Shield,
     Eye,
     BadgeCheck,
+    Trash2,
+    ArrowUpRight,
 } from 'lucide-react';
 
 import AppLayout from '@/layouts/app-layout';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import DeleteDialog from '@/components/DeleteDialog';
+import SearchBar from '@/components/SearchBar';
 import Pagination, { type PaginationLink } from '@/components/Pagination';
 import {
     Dialog,
@@ -62,6 +66,7 @@ interface Props {
     users: Paginated<AppUser>;
     counts: Record<string, number>;
     filter: string;
+    search: string;
 }
 
 const FILTERS = ['all', 'pending', 'active', 'suspended'] as const;
@@ -79,18 +84,43 @@ const statusPill = (status: string) => {
     }
 };
 
-export default function Index({ users, counts, filter }: Props) {
+export default function Index({ users, counts, filter, search }: Props) {
     const [detail, setDetail] = useState<AppUser | null>(null);
     const [denyTarget, setDenyTarget] = useState<AppUser | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<AppUser | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     const visible = users.data;
 
+    const destroy = () => {
+        if (!deleteTarget) return;
+        setDeleting(true);
+        router.delete(`/admin/users/${deleteTarget.id}`, {
+            preserveScroll: true,
+            onSuccess: () => setDeleteTarget(null),
+            onFinish: () => setDeleting(false),
+        });
+    };
+
+    // Navigate keeping both the status filter and the search term in sync.
+    const go = (params: Record<string, string>) =>
+        router.get('/admin/users', params, {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+        });
+
     const setFilter = (status: string) =>
-        router.get(
-            '/admin/users',
-            status === 'all' ? {} : { status },
-            { preserveScroll: true, preserveState: true },
-        );
+        go({
+            ...(status === 'all' ? {} : { status }),
+            ...(search ? { search } : {}),
+        });
+
+    const onSearch = (term: string) =>
+        go({
+            ...(filter === 'all' ? {} : { status: filter }),
+            ...(term ? { search: term } : {}),
+        });
 
     const approve = (id: number) =>
         router.patch(
@@ -136,26 +166,35 @@ export default function Index({ users, counts, filter }: Props) {
                     </div>
                 </div>
 
-                {/* FILTERS */}
-                <div className="flex flex-wrap gap-3">
-                    {FILTERS.map((f) => {
-                        const on = filter === f;
-                        const count = counts[f] ?? 0;
-                        return (
-                            <button
-                                key={f}
-                                onClick={() => setFilter(f)}
-                                className={`rounded-full px-5 py-2 text-sm font-semibold capitalize transition ${
-                                    on
-                                        ? 'bg-black text-lime'
-                                        : 'border border-line bg-card text-muted hover:border-lime hover:text-lime'
-                                }`}
-                            >
-                                {f}
-                                <span className="ml-2 opacity-70">{count}</span>
-                            </button>
-                        );
-                    })}
+                {/* FILTERS + SEARCH */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-wrap gap-3">
+                        {FILTERS.map((f) => {
+                            const on = filter === f;
+                            const count = counts[f] ?? 0;
+                            return (
+                                <button
+                                    key={f}
+                                    onClick={() => setFilter(f)}
+                                    className={`rounded-full px-5 py-2 text-sm font-semibold capitalize transition ${
+                                        on
+                                            ? 'bg-black text-lime'
+                                            : 'border border-line bg-card text-muted hover:border-lime hover:text-lime'
+                                    }`}
+                                >
+                                    {f}
+                                    <span className="ml-2 opacity-70">
+                                        {count}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <SearchBar
+                        initial={search}
+                        placeholder="Search name, email, code…"
+                        onSearch={onSearch}
+                    />
                 </div>
 
                 {/* LIST */}
@@ -240,6 +279,14 @@ export default function Index({ users, counts, filter }: Props) {
                                         Details
                                     </button>
 
+                                    <Link
+                                        href={`/admin/users/${u.id}`}
+                                        className="inline-flex items-center gap-1.5 rounded-xl border border-line px-3 py-2.5 text-sm font-semibold text-[#5A6152] transition hover:border-lime hover:text-ink"
+                                    >
+                                        <ArrowUpRight size={15} />
+                                        Profile
+                                    </Link>
+
                                     <span
                                         className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${statusPill(
                                             u.status,
@@ -276,6 +323,17 @@ export default function Index({ users, counts, filter }: Props) {
                                             Reinstate
                                         </button>
                                     )}
+
+                                    {u.role !== 'admin' && (
+                                        <button
+                                            onClick={() => setDeleteTarget(u)}
+                                            title="Delete this user"
+                                            className="inline-flex items-center gap-1.5 rounded-xl border border-line px-3 py-2.5 text-sm font-bold text-[#8a8f80] transition hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                                        >
+                                            <Trash2 size={16} />
+                                            Delete
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -297,6 +355,24 @@ export default function Index({ users, counts, filter }: Props) {
                 }
                 confirmLabel="Suspend"
                 onConfirm={deny}
+            />
+
+            <DeleteDialog
+                open={deleteTarget !== null}
+                onOpenChange={(o) => !o && setDeleteTarget(null)}
+                title="Delete this user?"
+                description={
+                    deleteTarget
+                        ? `${deleteTarget.first_name} ${deleteTarget.last_name} and all their registrations, run submissions, shipments and certificates will be permanently removed.`
+                        : ''
+                }
+                confirmPhrase={
+                    deleteTarget
+                        ? `${deleteTarget.first_name} ${deleteTarget.last_name}`
+                        : ''
+                }
+                processing={deleting}
+                onConfirm={destroy}
             />
 
             {/* FULL DETAILS MODAL */}

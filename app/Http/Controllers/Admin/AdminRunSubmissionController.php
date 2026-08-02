@@ -11,8 +11,12 @@ use Inertia\Inertia;
 
 class AdminRunSubmissionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        // Which status the admin is drilling into (all by default).
+        $filter = $request->query('status', 'all');
+        $search = trim((string) $request->query('search', ''));
+
         // Status counts come from the full table, independent of the page.
         $counts = RunSubmission::query()
             ->selectRaw('status, count(*) as total')
@@ -23,6 +27,15 @@ class AdminRunSubmissionController extends Controller
             'user',
             'registrations.eventCategory.event',
         ])
+            ->when(
+                in_array($filter, ['pending', 'approved', 'rejected'], true),
+                fn ($query) => $query->where('status', $filter),
+            )
+            ->when($search !== '', fn ($query) => $query->whereHas('user', fn ($u) => $u
+                ->where('first_name', 'like', "%{$search}%")
+                ->orWhere('last_name', 'like', "%{$search}%")
+                ->orWhereRaw("CONCAT(first_name, ' ', last_name) like ?", ["%{$search}%"])
+                ->orWhere('runner_code', 'like', "%{$search}%")))
             ->latest()
             ->paginate(8)
             ->withQueryString()
@@ -39,6 +52,8 @@ class AdminRunSubmissionController extends Controller
                     'runner_name' => $submission->user?->full_name,
                     'runner_code' => $submission->user?->runner_code ?? '—',
                     'km' => (float) $submission->distance,
+                    'run_date' => $submission->run_date?->format('M j, Y'),
+                    'run_date_input' => $submission->run_date?->toDateString(),
                     'events' => $events,
                     'submitted_at' => $submission->created_at?->diffForHumans(),
                     'status' => $submission->status,
@@ -65,6 +80,10 @@ class AdminRunSubmissionController extends Controller
             ],
 
             'submissions' => $submissions,
+
+            // Which status tab is active (drives the filter UI).
+            'filter' => $filter,
+            'search' => $search,
         ]);
     }
 
@@ -192,6 +211,118 @@ class AdminRunSubmissionController extends Controller
         $this->toast('Run submission rejected.');
 
         return back();
+    }
+
+    /**
+     * Edit a run submission — including one that is already approved.
+     *
+     * Correcting the distance of an approved run changes how much it credited,
+     * so every linked registration is recomputed afterwards to keep event
+     * progress (and completion) accurate.
+     */
+    public function update(Request $request, RunSubmission $runSubmission)
+    {
+        $validated = $request->validate([
+            'distance' => ['required', 'numeric', 'min:0.1'],
+            'run_date' => ['required', 'date', 'before_or_equal:today'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $runSubmission->update([
+            'distance' => $validated['distance'],
+            'run_date' => $validated['run_date'],
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        if ($runSubmission->status === 'approved') {
+            $registrations = $runSubmission->registrations()
+                ->with('eventCategory')
+                ->get();
+
+            foreach ($registrations as $registration) {
+                $this->recomputeRegistration($registration);
+            }
+        }
+
+        $this->toast('Run submission updated.');
+
+        return back();
+    }
+
+    /**
+     * Permanently delete an incorrectly-entered run submission.
+     *
+     * If the run had already been approved its distance was credited to every
+     * linked registration, so we first recompute each of those registrations
+     * from the runs that remain — reversing the credited km, fixing the
+     * activity count, and rolling back a completion (plus its certificate) if
+     * the runner no longer meets the goal without this run.
+     */
+    public function destroy(RunSubmission $runSubmission)
+    {
+        $wasApproved = $runSubmission->status === 'approved';
+
+        // Capture the affected registrations before the pivot rows disappear.
+        $registrations = $wasApproved
+            ? $runSubmission->registrations()->with('eventCategory')->get()
+            : collect();
+
+        $runSubmission->delete();
+
+        foreach ($registrations as $registration) {
+            $this->recomputeRegistration($registration);
+        }
+
+        $this->toast('Run submission deleted.');
+
+        return back();
+    }
+
+    /**
+     * Rebuild a registration's progress from the approved runs that remain
+     * linked to it, keeping completed_km, activity_count, last_activity_at and
+     * completion status consistent after a run is removed.
+     */
+    private function recomputeRegistration(Registration $registration): void
+    {
+        // Only credited registrations (approved/completed) track progress.
+        if (! in_array($registration->status, ['approved', 'completed'], true)) {
+            return;
+        }
+
+        $target = (float) ($registration->eventCategory->target_km ?? 0);
+
+        $runs = RunSubmission::query()
+            ->where('status', 'approved')
+            ->whereHas(
+                'registrations',
+                fn ($query) => $query->where('registrations.id', $registration->id),
+            )
+            ->get();
+
+        $total = (float) $runs->sum('distance');
+        $capped = $target > 0 ? min($total, $target) : $total;
+        $wasCompleted = $registration->status === 'completed';
+        $nowCompleted = $target > 0 && $capped >= $target;
+
+        $registration->completed_km = $capped;
+        $registration->activity_count = $runs->count();
+        $registration->last_activity_at = $runs->max('created_at');
+
+        if ($nowCompleted && ! $wasCompleted) {
+            // Newly reached the goal (e.g. an edit raised the distance): mark
+            // completed so the certificate observer issues the certificate.
+            $registration->status = 'completed';
+            $registration->completed_at = $registration->completed_at ?? now();
+        } elseif ($wasCompleted && ! $nowCompleted) {
+            // No longer a finisher: revert to in-progress and revoke the
+            // certificate that completion had issued.
+            $registration->status = 'approved';
+            $registration->completed_at = null;
+            $registration->certificate()->delete();
+        }
+
+        $registration->save();
     }
 
     /**

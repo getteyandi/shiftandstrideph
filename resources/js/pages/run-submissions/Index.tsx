@@ -35,7 +35,7 @@ interface Paginated<T> {
 interface SubmitRunProps {
     activeRegistrations: Reg[];
     recentSubmissions: Paginated<RecentSub>;
-    runDate?: string;
+    today: string;
 }
 
 const STATUS_PILL: Record<string, { bg: string; fg: string }> = {
@@ -50,6 +50,7 @@ interface FormData {
     photo: File | null;
     proof_link: string;
     distance: string;
+    run_date: string;
     notes: string;
     [key: string]: (number | string)[] | string | File | null;
 }
@@ -57,7 +58,7 @@ interface FormData {
 export default function SubmitRun({
     activeRegistrations,
     recentSubmissions,
-    runDate = '',
+    today,
 }: SubmitRunProps) {
     const fileInput = useRef<HTMLInputElement>(null);
     const [preview, setPreview] = useState<string | null>(null);
@@ -73,6 +74,7 @@ export default function SubmitRun({
             photo: null,
             proof_link: '',
             distance: '',
+            run_date: today,
             notes: '',
         });
 
@@ -96,7 +98,7 @@ export default function SubmitRun({
         post('/run-submissions', {
             forceFormData: true,
             onSuccess: () => {
-                reset('photo', 'proof_link', 'distance', 'notes');
+                reset('photo', 'proof_link', 'distance', 'run_date', 'notes');
                 setPreview(null);
             },
         });
@@ -250,10 +252,19 @@ export default function SubmitRun({
                                     Run Date
                                 </div>
                                 <input
-                                    value={runDate}
-                                    readOnly
-                                    className="w-full rounded-xl border-[1.5px] border-line-2 px-3.5 py-3 text-[15px] font-semibold text-[#3A4034] outline-none"
+                                    type="date"
+                                    value={data.run_date}
+                                    max={today}
+                                    onChange={(e) =>
+                                        setData('run_date', e.target.value)
+                                    }
+                                    className="w-full rounded-xl border-[1.5px] border-line-2 px-3.5 py-3 text-[15px] font-semibold text-[#3A4034] outline-none focus:border-lime"
                                 />
+                                {errors.run_date && (
+                                    <p className="mt-1 text-sm font-medium text-red-500">
+                                        {errors.run_date}
+                                    </p>
+                                )}
                             </div>
                         </div>
 

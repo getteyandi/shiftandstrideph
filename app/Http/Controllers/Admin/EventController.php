@@ -244,13 +244,8 @@ class EventController extends Controller
     {
         $makeHighlighted = ! $event->is_highlighted;
 
-        // Only one event can be highlighted at a time.
-        if ($makeHighlighted) {
-            Event::where('id', '!=', $event->id)
-                ->where('is_highlighted', true)
-                ->update(['is_highlighted' => false]);
-        }
-
+        // Multiple events can be highlighted at once so several concurrent
+        // ongoing events can all be featured on the public site.
         $event->update(['is_highlighted' => $makeHighlighted]);
 
         $this->toast(

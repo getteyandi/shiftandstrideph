@@ -13,6 +13,7 @@ class AdminRegistrationController extends Controller
     public function index(Request $request)
     {
         $filter = $request->query('status', 'all');
+        $search = trim((string) $request->query('search', ''));
 
         $counts = Registration::query()
             ->selectRaw('status, count(*) as total')
@@ -29,6 +30,16 @@ class AdminRegistrationController extends Controller
                 in_array($filter, ['pending', 'approved', 'rejected', 'completed'], true),
                 fn ($query) => $query->where('status', $filter),
             )
+            ->when($search !== '', fn ($query) => $query->where(function ($q) use ($search) {
+                $q->where('bib_number', 'like', "%{$search}%")
+                    ->orWhereHas('user', fn ($u) => $u
+                        ->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhereRaw("CONCAT(first_name, ' ', last_name) like ?", ["%{$search}%"])
+                        ->orWhere('email', 'like', "%{$search}%"))
+                    ->orWhereHas('eventCategory.event', fn ($e) => $e
+                        ->where('name', 'like', "%{$search}%"));
+            }))
             ->latest()
             ->paginate(8)
             ->withQueryString()
@@ -81,6 +92,7 @@ class AdminRegistrationController extends Controller
                 'completed' => (int) ($counts['completed'] ?? 0),
             ],
             'filter' => $filter,
+            'search' => $search,
         ]);
     }
 
@@ -145,6 +157,22 @@ class AdminRegistrationController extends Controller
         );
 
         $this->toast('Registration rejected.');
+
+        return back();
+    }
+
+    /**
+     * Permanently delete an incorrectly-entered registration.
+     *
+     * Database cascades remove the linked run pivots, progress rows and any
+     * issued certificate. The runner's account and other registrations are
+     * untouched, so they can simply re-register if this was a mistake.
+     */
+    public function destroy(Registration $registration)
+    {
+        $registration->delete();
+
+        $this->toast('Registration deleted.');
 
         return back();
     }

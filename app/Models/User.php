@@ -105,6 +105,14 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
+     * Get the user's kit/reward shipments.
+     */
+    public function shipments(): HasMany
+    {
+        return $this->hasMany(Shipment::class);
+    }
+
+    /**
      * Full name accessor.
      */
     public function getFullNameAttribute(): string

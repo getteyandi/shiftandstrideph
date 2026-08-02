@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     Footprints,
     ImageIcon,
@@ -11,6 +11,7 @@ import {
 
 import AppLayout from '@/layouts/app-layout';
 import SectionHeader from '@/components/SectionHeader';
+import SearchBar from '@/components/SearchBar';
 import Pagination, { type PaginationLink } from '@/components/Pagination';
 
 interface RunEvent {
@@ -22,6 +23,7 @@ interface Run {
     distance: number;
     status: 'pending' | 'approved' | 'rejected';
     notes: string | null;
+    ran_on: string | null;
     date: string;
     reviewed_at: string | null;
     rejection_reason: string | null;
@@ -44,6 +46,7 @@ interface Props {
         pending: number;
         total_km: number;
     };
+    search: string;
 }
 
 const STATUS_PILL: Record<string, string> = {
@@ -76,7 +79,14 @@ function StatCard({
     );
 }
 
-export default function Index({ runs, stats }: Props) {
+export default function Index({ runs, stats, search }: Props) {
+    const onSearch = (term: string) =>
+        router.get('/my-runs', term ? { search: term } : {}, {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+        });
+
     return (
         <div>
             <Head title="My Runs" />
@@ -127,7 +137,16 @@ export default function Index({ runs, stats }: Props) {
 
                 {/* LIST */}
                 <div>
-                    <SectionHeader title="Submissions" />
+                    <SectionHeader
+                        title="Submissions"
+                        aside={
+                            <SearchBar
+                                initial={search}
+                                placeholder="Search by event, notes, distance…"
+                                onSearch={onSearch}
+                            />
+                        }
+                    />
                     {runs.data.length === 0 ? (
                         <div className="rounded-[20px] border border-dashed border-line bg-card py-16 text-center">
                             <Footprints
@@ -198,6 +217,11 @@ export default function Index({ runs, stats }: Props) {
                                         )}
 
                                         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-2">
+                                            {run.ran_on && (
+                                                <span className="font-semibold text-ink">
+                                                    Ran {run.ran_on}
+                                                </span>
+                                            )}
                                             <span>Submitted {run.date}</span>
                                             {run.proof_link && (
                                                 <a

@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { cn } from '@/lib/utils';
 import AppLayout from '@/layouts/app-layout';
 import SectionHeader from '@/components/SectionHeader';
+import SearchBar from '@/components/SearchBar';
 import Pagination, { type PaginationLink } from '@/components/Pagination';
 import ActiveEventCard from '@/components/ActiveEventCard';
 import {
@@ -86,6 +87,7 @@ interface Props {
     events: Paginated<EventItem>;
     joinedEvents: Paginated<JoinedEvent>;
     filter: string;
+    search: string;
 }
 
 const FILTERS = [
@@ -104,13 +106,26 @@ export default function EventsIndex({
     events,
     joinedEvents,
     filter,
+    search,
 }: Props) {
+    const go = (params: Record<string, string>) =>
+        router.get('/events', params, {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+        });
+
     const setFilter = (key: string) =>
-        router.get(
-            '/events',
-            key === 'active' ? {} : { filter: key },
-            { preserveScroll: true, preserveState: true },
-        );
+        go({
+            ...(key === 'active' ? {} : { filter: key }),
+            ...(search ? { search } : {}),
+        });
+
+    const onSearch = (term: string) =>
+        go({
+            ...(filter === 'active' ? {} : { filter }),
+            ...(term ? { search: term } : {}),
+        });
 
     return (
         <div>
@@ -147,6 +162,12 @@ export default function EventsIndex({
                         })}
                     </div>
                 </div>
+
+                <SearchBar
+                    initial={search}
+                    placeholder="Search events by name or location…"
+                    onSearch={onSearch}
+                />
 
                 {/* FEATURED / HIGHLIGHTED EVENTS */}
                 {highlighted.length > 0 && (
@@ -213,7 +234,6 @@ export default function EventsIndex({
 
 /* The big featured (admin-highlighted) event. */
 function FeaturedEvent({ event }: { event: EventItem }) {
-    const history = isHistory(event.status);
     return (
         <Link
             href={`/events/${event.id}/board`}
@@ -228,8 +248,10 @@ function FeaturedEvent({ event }: { event: EventItem }) {
             )}
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,11,8,.35),rgba(9,11,8,.9))]" />
 
-            <div className="relative flex min-h-[260px] flex-col justify-end p-7 md:p-9">
-                <div className="absolute left-7 top-7 flex flex-wrap gap-2 md:left-9 md:top-9">
+            <div className="relative flex min-h-[260px] flex-col gap-5 p-7 md:p-9">
+                {/* Badges sit in normal flow above the title so they never
+                    overlap it, however tall the card content becomes. */}
+                <div className="flex flex-wrap gap-2">
                     <span className="inline-flex items-center gap-1 rounded-full bg-lime px-3 py-1 text-[11px] font-extrabold uppercase text-[#12150d]">
                         <Star size={12} className="fill-[#12150d]" />
                         Highlighted
@@ -240,36 +262,38 @@ function FeaturedEvent({ event }: { event: EventItem }) {
                     <PresetTag preset={event.preset} dark />
                 </div>
 
-                <h2 className="font-display text-[clamp(28px,4vw,46px)] font-black italic uppercase leading-[.95] text-white">
-                    {event.name}
-                </h2>
-                <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-[#cdd3c3]">
-                    <span className="inline-flex items-center gap-1.5">
-                        <MapPin size={15} />
-                        {event.location}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                        <Calendar size={15} />
-                        {event.dates}
-                    </span>
-                    <span>{event.joined_count} runners joined</span>
-                </div>
-
-                <div className="mt-5 flex flex-wrap items-center gap-3">
-                    {event.categories.slice(0, 5).map((c) => (
-                        <span
-                            key={c}
-                            className="rounded-lg border border-white/20 bg-white/5 px-3 py-1 font-display text-sm font-bold italic text-white"
-                        >
-                            {c}
+                <div className="mt-auto">
+                    <h2 className="font-display text-[clamp(28px,4vw,46px)] font-black italic uppercase leading-[.95] text-white">
+                        {event.name}
+                    </h2>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-[#cdd3c3]">
+                        <span className="inline-flex items-center gap-1.5">
+                            <MapPin size={15} />
+                            {event.location}
                         </span>
-                    ))}
-                </div>
+                        <span className="inline-flex items-center gap-1.5">
+                            <Calendar size={15} />
+                            {event.dates}
+                        </span>
+                        <span>{event.joined_count} runners joined</span>
+                    </div>
 
-                <span className="mt-6 inline-flex w-fit items-center gap-2 rounded-xl bg-lime px-6 py-3 font-bold text-[#12150d] transition group-hover:brightness-95">
-                    View Live Board
-                    <ArrowRight size={17} />
-                </span>
+                    <div className="mt-5 flex flex-wrap items-center gap-3">
+                        {event.categories.slice(0, 5).map((c) => (
+                            <span
+                                key={c}
+                                className="rounded-lg border border-white/20 bg-white/5 px-3 py-1 font-display text-sm font-bold italic text-white"
+                            >
+                                {c}
+                            </span>
+                        ))}
+                    </div>
+
+                    <span className="mt-6 inline-flex w-fit items-center gap-2 rounded-xl bg-lime px-6 py-3 font-bold text-[#12150d] transition group-hover:brightness-95">
+                        View Live Board
+                        <ArrowRight size={17} />
+                    </span>
+                </div>
             </div>
         </Link>
     );

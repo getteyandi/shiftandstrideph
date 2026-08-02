@@ -1,5 +1,11 @@
 import { Home, Calendar, Upload, Trophy } from '@/lib/icons';
-import { ClipboardList, Users, Package, ShieldCheck } from 'lucide-react';
+import {
+    ClipboardList,
+    Users,
+    Package,
+    ShieldCheck,
+    Footprints,
+} from 'lucide-react';
 import { type ComponentType } from 'react';
 
 type IconType = ComponentType<{
@@ -80,6 +86,12 @@ export const NAV_ITEMS: NavItem[] = [
         label: 'Submit Run',
         href: '/run-submissions',
         icon: Upload,
+    },
+    {
+        id: 'my-runs',
+        label: 'My Runs',
+        href: '/my-runs',
+        icon: Footprints,
     },
     {
         id: 'shipments',

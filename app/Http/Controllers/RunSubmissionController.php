@@ -62,7 +62,8 @@ class RunSubmissionController extends Controller
         return Inertia::render('run-submissions/Index', [
             'activeRegistrations' => $registrations,
             'recentSubmissions' => $recentSubmissions,
-            'runDate' => now()->format('M j, Y'),
+            // ISO default for the date picker (today); can't run in the future.
+            'today' => now()->toDateString(),
         ]);
     }
 
@@ -79,6 +80,8 @@ class RunSubmissionController extends Controller
             ],
 
             'distance' => ['required', 'numeric', 'min:0.1'],
+            // The runner picks the day the run happened; can't be in the future.
+            'run_date' => ['required', 'date', 'before_or_equal:today'],
             'proof_type' => ['required', 'in:photo,link'],
             'photo' => ['required_if:proof_type,photo', 'nullable', 'image', 'max:5120'],
             'proof_link' => ['required_if:proof_type,link', 'nullable', 'url', 'max:500'],
@@ -112,6 +115,7 @@ class RunSubmissionController extends Controller
         $submission = RunSubmission::create([
             'user_id' => $userId,
             'distance' => $validated['distance'],
+            'run_date' => $validated['run_date'],
             'photo' => $path,
             'proof_link' => $validated['proof_type'] === 'link'
                 ? $validated['proof_link']

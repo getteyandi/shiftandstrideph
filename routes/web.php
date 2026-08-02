@@ -108,6 +108,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
         [AdminUserController::class, 'index']
     )->name('admin.users.index');
 
+    Route::get(
+        '/admin/users/{user}',
+        [AdminUserController::class, 'show']
+    )->name('admin.users.show');
+
     Route::patch(
         '/admin/users/{user}/approve',
         [AdminUserController::class, 'approve']
@@ -117,6 +122,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
         '/admin/users/{user}/deny',
         [AdminUserController::class, 'deny']
     )->name('admin.users.deny');
+
+    Route::delete(
+        '/admin/users/{user}',
+        [AdminUserController::class, 'destroy']
+    )->name('admin.users.destroy');
 
     // Registration approvals
     Route::get(
@@ -134,6 +144,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
         [AdminRegistrationController::class, 'reject']
     )->name('admin.registrations.reject');
 
+    Route::delete(
+        '/admin/registrations/{registration}',
+        [AdminRegistrationController::class, 'destroy']
+    )->name('admin.registrations.destroy');
+
     // Run submission reviews
     Route::get(
         '/admin/run-submissions',
@@ -149,6 +164,16 @@ Route::middleware(['auth', 'admin'])->group(function () {
         '/admin/run-submissions/{runSubmission}/reject',
         [AdminRunSubmissionController::class, 'reject']
     )->name('admin.run-submissions.reject');
+
+    Route::patch(
+        '/admin/run-submissions/{runSubmission}',
+        [AdminRunSubmissionController::class, 'update']
+    )->name('admin.run-submissions.update');
+
+    Route::delete(
+        '/admin/run-submissions/{runSubmission}',
+        [AdminRunSubmissionController::class, 'destroy']
+    )->name('admin.run-submissions.destroy');
 
     // Shipment tracking
     Route::get(

@@ -27,7 +27,7 @@ use Illuminate\Support\Carbon;
  *
  * @mixin Builder<RunSubmission>
  */
-#[Fillable(['user_id', 'registration_id', 'distance', 'photo', 'proof_link', 'notes', 'status', 'rejection_reason', 'reviewed_by', 'reviewed_at'])]
+#[Fillable(['user_id', 'registration_id', 'distance', 'run_date', 'photo', 'proof_link', 'notes', 'status', 'rejection_reason', 'reviewed_by', 'reviewed_at'])]
 class RunSubmission extends Model
 {
     /**
@@ -69,6 +69,7 @@ class RunSubmission extends Model
     {
         return [
             'distance' => 'decimal:2',
+            'run_date' => 'date',
             'reviewed_at' => 'datetime',
         ];
     }

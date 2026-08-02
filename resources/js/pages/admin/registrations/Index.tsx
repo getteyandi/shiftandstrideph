@@ -8,10 +8,13 @@ import {
     Hash,
     Users,
     Crown,
+    Trash2,
 } from 'lucide-react';
 
 import AppLayout from '@/layouts/app-layout';
 import RejectDialog from '@/components/RejectDialog';
+import DeleteDialog from '@/components/DeleteDialog';
+import SearchBar from '@/components/SearchBar';
 import Pagination, { type PaginationLink } from '@/components/Pagination';
 
 interface Registration {
@@ -57,6 +60,7 @@ interface Props {
     registrations: Paginated<Registration>;
     counts: Record<string, number>;
     filter: string;
+    search: string;
 }
 
 const FILTERS = ['all', 'pending', 'approved', 'rejected', 'completed'] as const;
@@ -75,18 +79,47 @@ const statusPill = (status: string) => {
     }
 };
 
-export default function Index({ registrations, counts, filter }: Props) {
+export default function Index({
+    registrations,
+    counts,
+    filter,
+    search,
+}: Props) {
     const [rejectId, setRejectId] = useState<number | null>(null);
     const [rejecting, setRejecting] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<Registration | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     const visible = registrations.data;
 
+    const destroy = () => {
+        if (!deleteTarget) return;
+        setDeleting(true);
+        router.delete(`/admin/registrations/${deleteTarget.id}`, {
+            preserveScroll: true,
+            onSuccess: () => setDeleteTarget(null),
+            onFinish: () => setDeleting(false),
+        });
+    };
+
+    const go = (params: Record<string, string>) =>
+        router.get('/admin/registrations', params, {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+        });
+
     const setFilter = (status: string) =>
-        router.get(
-            '/admin/registrations',
-            status === 'all' ? {} : { status },
-            { preserveScroll: true, preserveState: true },
-        );
+        go({
+            ...(status === 'all' ? {} : { status }),
+            ...(search ? { search } : {}),
+        });
+
+    const onSearch = (term: string) =>
+        go({
+            ...(filter === 'all' ? {} : { status: filter }),
+            ...(term ? { search: term } : {}),
+        });
 
     const approve = (id: number) =>
         router.patch(
@@ -131,26 +164,35 @@ export default function Index({ registrations, counts, filter }: Props) {
                     </div>
                 </div>
 
-                {/* FILTERS */}
-                <div className="flex flex-wrap gap-3">
-                    {FILTERS.map((f) => {
-                        const on = filter === f;
-                        const count = counts[f] ?? 0;
-                        return (
-                            <button
-                                key={f}
-                                onClick={() => setFilter(f)}
-                                className={`rounded-full px-5 py-2 text-sm font-semibold capitalize transition ${
-                                    on
-                                        ? 'bg-black text-lime'
-                                        : 'border border-line bg-card text-muted hover:border-lime hover:text-lime'
-                                }`}
-                            >
-                                {f}
-                                <span className="ml-2 opacity-70">{count}</span>
-                            </button>
-                        );
-                    })}
+                {/* FILTERS + SEARCH */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-wrap gap-3">
+                        {FILTERS.map((f) => {
+                            const on = filter === f;
+                            const count = counts[f] ?? 0;
+                            return (
+                                <button
+                                    key={f}
+                                    onClick={() => setFilter(f)}
+                                    className={`rounded-full px-5 py-2 text-sm font-semibold capitalize transition ${
+                                        on
+                                            ? 'bg-black text-lime'
+                                            : 'border border-line bg-card text-muted hover:border-lime hover:text-lime'
+                                    }`}
+                                >
+                                    {f}
+                                    <span className="ml-2 opacity-70">
+                                        {count}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <SearchBar
+                        initial={search}
+                        placeholder="Search runner, email, event, bib…"
+                        onSearch={onSearch}
+                    />
                 </div>
 
                 {/* LIST */}
@@ -249,6 +291,15 @@ export default function Index({ registrations, counts, filter }: Props) {
                                             </button>
                                         </div>
                                     )}
+
+                                    <button
+                                        onClick={() => setDeleteTarget(r)}
+                                        title="Delete this registration"
+                                        className="inline-flex items-center gap-1.5 rounded-xl border border-line px-3 py-2.5 text-sm font-bold text-[#8a8f80] transition hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                                    >
+                                        <Trash2 size={16} />
+                                        Delete
+                                    </button>
                                 </div>
                               </div>
 
@@ -344,6 +395,27 @@ export default function Index({ registrations, counts, filter }: Props) {
                 title="Reject registration"
                 processing={rejecting}
                 onConfirm={reject}
+            />
+
+            <DeleteDialog
+                open={deleteTarget !== null}
+                onOpenChange={(o) => !o && setDeleteTarget(null)}
+                title="Delete registration?"
+                description={
+                    deleteTarget
+                        ? `${deleteTarget.user.first_name} ${deleteTarget.user.last_name}'s registration for ${
+                              deleteTarget.event_category?.event?.name ??
+                              'this event'
+                          } will be permanently removed, along with its submitted runs and any certificate.`
+                        : ''
+                }
+                confirmPhrase={
+                    deleteTarget
+                        ? `${deleteTarget.user.first_name} ${deleteTarget.user.last_name}`
+                        : ''
+                }
+                processing={deleting}
+                onConfirm={destroy}
             />
         </>
     );
