@@ -51,9 +51,10 @@ class CompleteEndedEvents extends Command
         foreach ($events as $event) {
             DB::transaction(function () use ($event, &$completedRunners) {
 
-                // Only open-KM categories (no distance goal) complete on end.
+                // Open categories have no hard finish line during the event, so
+                // their still-active runners are only completed once it ends.
                 $openCategoryIds = $event->categories
-                    ->filter(fn ($category) => (float) $category->target_km <= 0)
+                    ->filter(fn ($category) => (bool) $category->is_open)
                     ->pluck('id');
 
                 if ($openCategoryIds->isNotEmpty()) {
@@ -72,15 +73,15 @@ class CompleteEndedEvents extends Command
                     }
                 }
 
-                // Only auto-close pure open-KM events (e.g. Unity Run) on their
-                // end date. Mixed events with distance-goal categories are left
-                // for the admin, since those finish per-runner at their goal.
-                $allOpenKm = $event->categories->isNotEmpty()
+                // Only auto-close events made up entirely of open categories
+                // (e.g. Unity Run) on their end date. Mixed events with
+                // fixed-distance categories are left for the admin.
+                $allOpen = $event->categories->isNotEmpty()
                     && $event->categories->every(
-                        fn ($category) => (float) $category->target_km <= 0
+                        fn ($category) => (bool) $category->is_open
                     );
 
-                if ($allOpenKm) {
+                if ($allOpen) {
                     $event->update(['status' => 'completed']);
                 }
             });

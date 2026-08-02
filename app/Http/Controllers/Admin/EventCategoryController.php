@@ -43,9 +43,12 @@ class EventCategoryController extends Controller
             'target_km' => ['required', 'numeric', 'min:1'],
             'registration_limit' => ['nullable', 'integer', 'min:1'],
             'ranking_enabled' => ['required', 'boolean'],
+            'is_open' => ['sometimes', 'boolean'],
         ]);
 
         $validated['target_km'] = round((float) $validated['target_km'], 2);
+        // Open categories treat the target as a goal that can be exceeded.
+        $validated['is_open'] = $request->boolean('is_open');
 
         EventCategory::create($validated);
 
@@ -74,9 +77,12 @@ class EventCategoryController extends Controller
             'target_km' => ['required', 'numeric', 'min:1'],
             'registration_limit' => ['nullable', 'integer', 'min:1'],
             'ranking_enabled' => ['required', 'boolean'],
+            'is_open' => ['sometimes', 'boolean'],
         ]);
 
         $validated['target_km'] = round((float) $validated['target_km'], 2);
+        // Open categories treat the target as a goal that can be exceeded.
+        $validated['is_open'] = $request->boolean('is_open');
 
         $eventCategory->update($validated);
 

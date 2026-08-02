@@ -14,6 +14,7 @@ interface Reg {
     bib_number: string;
     distance_done: number;
     target_km: number;
+    is_open?: boolean;
 }
 interface RecentSub {
     id: number | string;
@@ -341,8 +342,13 @@ export default function SubmitRun({
                                                     <span className="mt-px block text-[12.5px] text-muted">
                                                         {r.category_name} · Bib{' '}
                                                         {r.bib_number} ·{' '}
-                                                        {r.distance_done}/
-                                                        {r.target_km} KM
+                                                        {r.is_open
+                                                            ? `${r.distance_done} KM logged${
+                                                                  r.target_km > 0
+                                                                      ? ` · goal ${r.target_km}`
+                                                                      : ''
+                                                              }`
+                                                            : `${r.distance_done}/${r.target_km} KM`}
                                                     </span>
                                                 </span>
                                             </button>

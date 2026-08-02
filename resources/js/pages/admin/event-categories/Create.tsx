@@ -8,6 +8,7 @@ import {
     ArrowRight,
     Route as RouteIcon,
     CheckCircle2,
+    Infinity as InfinityIcon,
 } from 'lucide-react';
 
 import AppLayout from '@/layouts/app-layout';
@@ -44,6 +45,7 @@ interface FormData {
     target_km: string;
     registration_limit: string;
     ranking_enabled: boolean;
+    is_open: boolean;
     [key: string]: string | boolean;
 }
 
@@ -57,6 +59,7 @@ export default function Create({ event, events }: Props) {
             target_km: '',
             registration_limit: '',
             ranking_enabled: true,
+            is_open: false,
         });
 
     function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -237,6 +240,46 @@ export default function Create({ event, events }: Props) {
                                 <span
                                     className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
                                         data.ranking_enabled
+                                            ? 'left-[22px]'
+                                            : 'left-0.5'
+                                    }`}
+                                />
+                            </span>
+                        </button>
+
+                        {/* Open goal toggle */}
+                        <button
+                            type="button"
+                            onClick={() => setData('is_open', !data.is_open)}
+                            className={`flex w-full items-center justify-between rounded-2xl border p-5 text-left transition ${
+                                data.is_open
+                                    ? 'border-lime bg-[#F7FCEB]'
+                                    : 'border-line bg-white hover:border-lime'
+                            }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#eef7d8] text-lime">
+                                    <InfinityIcon size={20} />
+                                </div>
+                                <div>
+                                    <div className="font-semibold text-ink">
+                                        Open Goal (exceedable)
+                                    </div>
+                                    <div className="text-sm text-muted">
+                                        Runners can log past the target — distance
+                                        keeps adding up until the event ends.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <span
+                                className={`relative h-6 w-11 rounded-full transition ${
+                                    data.is_open ? 'bg-lime' : 'bg-[#d8ddd0]'
+                                }`}
+                            >
+                                <span
+                                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                                        data.is_open
                                             ? 'left-[22px]'
                                             : 'left-0.5'
                                     }`}

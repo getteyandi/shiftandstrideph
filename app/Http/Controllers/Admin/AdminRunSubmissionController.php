@@ -107,18 +107,31 @@ class AdminRunSubmissionController extends Controller
 
         // Credit every registration the run was submitted against. Each one is
         // capped at its own target so a 5 km run on a 4 km goal only shows 4 km.
+        // Standard registrations must be 'approved' to be credited; open-KM
+        // registrations keep accumulating even once marked 'completed', since
+        // they have no fixed goal and run until the event's due date.
         $registrations = $runSubmission->registrations()
-            ->where('registrations.status', 'approved')
             ->with('eventCategory')
-            ->get();
+            ->get()
+            ->filter(function (Registration $registration) {
+                $isOpen = (bool) ($registration->eventCategory->is_open ?? false);
+
+                return $registration->status === 'approved'
+                    || ($isOpen && $registration->status === 'completed');
+            });
 
         foreach ($registrations as $registration) {
 
             $target = (float) ($registration->eventCategory->target_km ?? 0);
+            $isOpen = (bool) ($registration->eventCategory->is_open ?? false);
 
-            $capped = $target > 0
-                ? min((float) $registration->completed_km + (float) $runSubmission->distance, $target)
-                : (float) $registration->completed_km + (float) $runSubmission->distance;
+            $newTotal = (float) $registration->completed_km + (float) $runSubmission->distance;
+
+            // Open categories accumulate uncapped (the target is only a goal);
+            // fixed-distance categories cap the credited distance at their goal.
+            $capped = (! $isOpen && $target > 0)
+                ? min($newTotal, $target)
+                : $newTotal;
 
             $registration->update([
                 'completed_km' => $capped,
@@ -126,7 +139,9 @@ class AdminRunSubmissionController extends Controller
                 'last_activity_at' => now(),
             ]);
 
-            if ($target > 0 && $capped >= $target) {
+            // Reaching the goal marks a finisher. Open categories keep accepting
+            // runs afterwards, so only flip the status the first time it's hit.
+            if ($target > 0 && $capped >= $target && $registration->status !== 'completed') {
                 $registration->update([
                     'status' => 'completed',
                     'completed_at' => now(),
@@ -291,6 +306,7 @@ class AdminRunSubmissionController extends Controller
         }
 
         $target = (float) ($registration->eventCategory->target_km ?? 0);
+        $isOpen = (bool) ($registration->eventCategory->is_open ?? false);
 
         $runs = RunSubmission::query()
             ->where('status', 'approved')
@@ -301,7 +317,8 @@ class AdminRunSubmissionController extends Controller
             ->get();
 
         $total = (float) $runs->sum('distance');
-        $capped = $target > 0 ? min($total, $target) : $total;
+        // Open categories keep the true total; fixed ones cap at their target.
+        $capped = (! $isOpen && $target > 0) ? min($total, $target) : $total;
         $wasCompleted = $registration->status === 'completed';
         $nowCompleted = $target > 0 && $capped >= $target;
 

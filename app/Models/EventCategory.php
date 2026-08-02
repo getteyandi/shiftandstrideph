@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
  * @property int $event_id
  * @property string $name
  * @property string $target_km
+ * @property bool $is_open
  * @property bool $ranking_enabled
  * @property int|null $badge_id
  * @property string|null $certificate_template
@@ -22,7 +23,7 @@ use Illuminate\Support\Carbon;
  *
  * @mixin Builder<EventCategory>
  */
-#[Fillable(['event_id', 'name', 'target_km', 'sort_order', 'registration_limit', 'ranking_enabled', 'badge_id', 'certificate_template'])]
+#[Fillable(['event_id', 'name', 'target_km', 'is_open', 'sort_order', 'registration_limit', 'ranking_enabled', 'badge_id', 'certificate_template'])]
 class EventCategory extends Model
 {
     /**
@@ -44,6 +45,7 @@ class EventCategory extends Model
     {
         return [
             'target_km' => 'decimal:2',
+            'is_open' => 'boolean',
             'ranking_enabled' => 'boolean',
         ];
     }

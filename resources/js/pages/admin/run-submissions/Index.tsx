@@ -6,6 +6,7 @@ import RejectDialog from '@/components/RejectDialog';
 import DeleteDialog from '@/components/DeleteDialog';
 import SearchBar from '@/components/SearchBar';
 import EditRunDialog from '@/components/admin/EditRunDialog';
+import RunDetailsDialog from '@/components/admin/RunDetailsDialog';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import {
@@ -17,6 +18,7 @@ import {
     Maximize2,
     Trash2,
     Pencil,
+    Eye,
     CalendarDays,
     ExternalLink as LinkIcon,
 } from 'lucide-react';
@@ -89,7 +91,7 @@ export default function Verification({
     search,
 }: VerificationProps) {
     const [statusById, setStatusById] = useState<Record<string, string>>({});
-    const [zoom, setZoom] = useState<Submission | null>(null);
+    const [viewTarget, setViewTarget] = useState<Submission | null>(null);
     const [rejectId, setRejectId] = useState<Submission['id'] | null>(null);
     const [rejecting, setRejecting] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Submission | null>(null);
@@ -273,7 +275,7 @@ export default function Verification({
                                 {s.photo_url ? (
                                     <button
                                         type="button"
-                                        onClick={() => setZoom(s)}
+                                        onClick={() => setViewTarget(s)}
                                         className="group relative h-28 w-28 shrink-0 overflow-hidden rounded-[14px] bg-[linear-gradient(135deg,#3a4a22,#161c0e)]"
                                     >
                                         <img
@@ -370,9 +372,18 @@ export default function Verification({
                                     <div className="mt-auto flex items-center justify-end gap-2 pt-3">
                                         <button
                                             type="button"
+                                            onClick={() => setViewTarget(s)}
+                                            title="View full details and proof"
+                                            className="mr-auto inline-flex items-center gap-1.5 rounded-[10px] border-[1.5px] border-line bg-card px-3 py-[9px] text-[13.5px] font-bold text-[#5A6152] transition-colors hover:border-lime hover:text-ink"
+                                        >
+                                            <Eye size={15} />
+                                            View
+                                        </button>
+                                        <button
+                                            type="button"
                                             onClick={() => setDeleteTarget(s)}
                                             title="Delete this submission"
-                                            className="mr-auto inline-flex items-center gap-1.5 rounded-[10px] border-[1.5px] border-line bg-card px-3 py-[9px] text-[13.5px] font-bold text-[#8a8f80] transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                                            className="inline-flex items-center gap-1.5 rounded-[10px] border-[1.5px] border-line bg-card px-3 py-[9px] text-[13.5px] font-bold text-[#8a8f80] transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
                                         >
                                             <Trash2 size={15} />
                                             Delete
@@ -471,46 +482,10 @@ export default function Verification({
                 onConfirm={destroy}
             />
 
-            {/* PHOTO LIGHTBOX */}
-            {zoom?.photo_url && (
-                <div
-                    onClick={() => setZoom(null)}
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-6 backdrop-blur-sm"
-                >
-                    <div
-                        onClick={(e) => e.stopPropagation()}
-                        className="max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-card"
-                    >
-                        <div className="flex items-center justify-between border-b border-line px-5 py-3">
-                            <div>
-                                <div className="font-bold text-ink">
-                                    {zoom.runner_name} · {zoom.km} KM
-                                </div>
-                                <div className="text-xs text-muted">
-                                    {zoom.events
-                                        .map((e) => e.event_name)
-                                        .filter(Boolean)
-                                        .join(', ') || 'No event'}
-                                </div>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setZoom(null)}
-                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-ink transition hover:bg-[#f5f8ee]"
-                            >
-                                <X size={18} />
-                            </button>
-                        </div>
-                        <div className="flex max-h-[75vh] items-center justify-center bg-black">
-                            <img
-                                src={zoom.photo_url}
-                                alt="Run proof full"
-                                className="max-h-[75vh] w-auto object-contain"
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
+            <RunDetailsDialog
+                run={viewTarget}
+                onClose={() => setViewTarget(null)}
+            />
         </>
     );
 }

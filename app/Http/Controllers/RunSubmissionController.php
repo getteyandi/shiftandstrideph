@@ -15,15 +15,25 @@ class RunSubmissionController extends Controller
     {
         $userId = auth()->id();
 
-        // Only approved registrations whose event isn't completed can receive
-        // a run. Completed registrations/events are excluded entirely.
+        // Which registrations can currently receive a run:
+        //  • Standard (distance-goal) categories: approved, event not completed.
+        //  • Open-KM categories (no fixed goal): still open until the event's
+        //    due date, even once the runner's registration is "completed" —
+        //    they keep accumulating distance right up to the end date.
         $registrations = Registration::with([
             'eventCategory.event',
         ])
             ->where('user_id', $userId)
-            ->where('status', 'approved')
-            ->whereHas('eventCategory.event', function ($query) {
-                $query->where('status', '!=', 'completed');
+            ->where(function ($query) {
+                $query->where(function ($standard) {
+                    $standard->where('status', 'approved')
+                        ->whereHas('eventCategory', fn ($c) => $c->where('is_open', false))
+                        ->whereHas('eventCategory.event', fn ($e) => $e->where('status', '!=', 'completed'));
+                })->orWhere(function ($open) {
+                    $open->whereIn('status', ['approved', 'completed'])
+                        ->whereHas('eventCategory', fn ($c) => $c->where('is_open', true))
+                        ->whereHas('eventCategory.event', fn ($e) => $e->where('end_date', '>=', now()));
+                });
             })
             ->get()
             ->map(fn (Registration $registration) => [
@@ -33,6 +43,7 @@ class RunSubmissionController extends Controller
                 'bib_number' => $registration->bib_number,
                 'distance_done' => (float) $registration->completed_km,
                 'target_km' => (float) ($registration->eventCategory?->target_km ?? 0),
+                'is_open' => (bool) ($registration->eventCategory?->is_open ?? false),
             ])
             ->values();
 
@@ -93,18 +104,37 @@ class RunSubmissionController extends Controller
             ->whereIn('id', $validated['registration_ids'])
             ->get();
 
-        // Guard: every chosen registration must be approved and in-progress.
+        // Guard: every chosen registration must currently accept runs.
         foreach ($registrations as $registration) {
-            if ($registration->status !== 'approved') {
-                return back()->withErrors([
-                    'registration_ids' => 'You can only submit runs to approved, in-progress events.',
-                ]);
-            }
+            $event = $registration->eventCategory?->event;
+            $isOpen = (bool) ($registration->eventCategory?->is_open ?? false);
 
-            if ($registration->eventCategory?->event?->status === 'completed') {
-                return back()->withErrors([
-                    'registration_ids' => 'One of the selected events has already been completed.',
-                ]);
+            if ($isOpen) {
+                // Open-KM: submittable until the event's due date, even once the
+                // registration is marked completed (it has no fixed goal).
+                if (! in_array($registration->status, ['approved', 'completed'], true)) {
+                    return back()->withErrors([
+                        'registration_ids' => 'You can only submit runs to events you have joined.',
+                    ]);
+                }
+
+                if ($event?->end_date && $event->end_date->isPast()) {
+                    return back()->withErrors([
+                        'registration_ids' => 'This event has ended — submissions are closed.',
+                    ]);
+                }
+            } else {
+                if ($registration->status !== 'approved') {
+                    return back()->withErrors([
+                        'registration_ids' => 'You can only submit runs to approved, in-progress events.',
+                    ]);
+                }
+
+                if ($event?->status === 'completed') {
+                    return back()->withErrors([
+                        'registration_ids' => 'One of the selected events has already been completed.',
+                    ]);
+                }
             }
         }
 
